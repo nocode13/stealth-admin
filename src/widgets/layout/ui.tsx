@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useUnit } from 'effector-react';
 import { LogoutOutlined } from '@ant-design/icons';
 
+import { LinkTelegram } from '@/features/auth/link-telegram';
 import { logoutModel } from '@/features/auth/logout';
 
 import * as model from './model';
@@ -41,15 +42,14 @@ export const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
             {collapsed ? 'S' : 'Stealth'}
           </Typography.Title>
           <Menu selectedKeys={activeRoutes} mode="inline" items={items} style={{ flex: 1 }} />
-          <Button
-            style={{ margin: `0 ${token.marginXS}px` }}
-            icon={<LogoutOutlined />}
-            onClick={() => logoutModel.triggered()}
-            loading={mutating}
-          >
-            {collapsed || 'Выйти'}
-          </Button>
+          <Flex vertical gap={token.marginXS} style={{ margin: `0 ${token.marginXS}px` }}>
+            <LinkTelegram.Trigger collapsed={collapsed} />
+            <Button icon={<LogoutOutlined />} onClick={() => logoutModel.triggered()} loading={mutating}>
+              {collapsed || 'Выйти'}
+            </Button>
+          </Flex>
         </Flex>
+        <LinkTelegram.View />
       </Sider>
       <AntLayout>
         {/* <Header

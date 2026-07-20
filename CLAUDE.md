@@ -1,12 +1,15 @@
 # stealth-admin
 
-Веб-админка (панель управления) к бэкенду **stealth-backend**. Сейчас реализованы страница
-логина и флоу авторизации; остальные разделы добавляются поверх этой основы.
+Веб-админка (панель управления) к бэкенду **stealth-backend**. Разделы: заказы, категории,
+каталог, продавцы, продажные позиции.
 
 ## Стек
 
-- **Vite 8** (Rolldown) + **React 19** + **TypeScript**, пакетный менеджер **pnpm**, линтер **oxlint**.
-- **effector** + **effector-react** (+ **patronum**) — состояние.
+- **Vite 8** (Rolldown) + **React 19** + **TypeScript**, пакетный менеджер **pnpm**.
+- **eslint 10** (flat config) + **prettier**; `eslint-plugin-boundaries` **проверяет слои FSD** —
+  нарушение импорта вверх по слоям падает как ошибка линтера.
+- **React Compiler** включён (`@rolldown/plugin-babel` + `reactCompilerPreset`).
+- **effector** + **effector-react** (+ **patronum**, **effector-refetch**) — состояние и запросы.
 - **atomic-router** + **atomic-router-react** — роутинг и guard'ы.
 - **antd 6** + **@ant-design/icons** — UI.
 - **react-hook-form** + **zod v4** — формы и валидация.
@@ -14,25 +17,32 @@
 
 ## Архитектура (Feature-Sliced Design)
 
-Слои: `app` → `pages` → `features` → `entities` → `shared`. Импорт-alias `@/*` → `src/*`
-(настроен в `tsconfig.app.json` и `vite.config.ts`).
+Слои: `app` → `pages` → `widgets` → `features` → `entities` → `shared`.
+Импорт-alias `@/*` → `src/*` (`tsconfig.app.json` + `vite.config.ts`).
 
 ```
 src/
-  app/        app.tsx (провайдеры + RouterProvider), model.ts (инициализация истории роутера)
-  pages/      auth/, home/ — ленивые (code-split): model.ts (factory с guard),
-              ui/ui.tsx (export component + createModel), ui/index.ts (createLazyPage+withSuspense → { route, view })
+  app/        app.tsx (провайдеры + RouterProvider + contextHolder'ы), model.ts (инициализация роутера)
+  pages/      auth, home, categories, catalog, listing, sellers, orders, order-detail,
+              forbidden, not-found. Каждая — ленивая (code-split):
+                model.ts        factory({ route }) с guard'ом и запросами
+                ui/ui.tsx       export component + createModel (строго эти два имени)
+                ui/index.ts     createLazyPage + withSuspense → { route, view, layout }
               index.ts — createRoutesView([...])
-  features/   auth/login (schema+model+ui), auth/logout
-  entities/   user/ — $user, $session, sessionFx (getMe), chainAuthorized/chainAnonymous
+  widgets/    layout/ — сайдбар, меню (MENU_ROUTES + $activeRoutes), кнопки привязки TG и выхода
+  features/   auth/login, auth/logout, auth/link-telegram,
+              category/creat-edit (sic — так называется директория), order/change-status
+  entities/   user/ ($user, $session, sessionFx, chainAuthorized/chainAnonymous),
+              category/, catalog/, listing/, seller/, order/
   shared/
-    api/      instances.ts (axios base), auth.ts (auth = { login, getMe, logout }),
-              error.ts, types.ts (User, Role, LoginPayload), index.ts (export const api = { auth })
-    lib/      form.ts — мост react-hook-form ↔ effector (createForm + useBindFormWithModel)
-              create-lazy-page.tsx — ленивая страница + guard (порт из cash-frontend / @dmed/frontend-core)
-              message.ts — effector-оператор antd-сообщений (message({clock, errorHandle}) + useBindMessageApi)
-    ui/       form/text-field.tsx (useController + antd Input), with-suspense.tsx, full-screen-loader.tsx
-    config/   routing.ts (router + routes), env.ts (API_URL), system.ts (appStarted)
+    api/      instances.ts (axios base, withCredentials), по файлу на ресурс
+              (auth, category, catalog, listing, orders, sellers), error.ts, types.ts,
+              index.ts (export const api = { ... })
+    lib/      form.ts (мост react-hook-form ↔ effector), create-lazy-page.tsx,
+              message.ts и notification.ts (effector-операторы antd), disclosure.ts,
+              f-retry.ts, format.ts
+    ui/       form/ (text-field, select-field), status-tag.tsx, with-suspense, with-title
+    config/   routing.ts (router + routes), pagination.ts (PAGE_SIZE), env.ts, system.ts
 ```
 
 Конвенции (зеркалят соседний **stealth-mobile**):
@@ -41,9 +51,36 @@ src/
   импорт zod — `import { z } from 'zod/v4'`, использовать `z.email()`.
 - переиспользуемые контролы форм — в `shared/ui/form/`.
 - защита роутов — через `userModel.chainAuthorized` / `chainAnonymous` в `pages/*/model.ts`,
-  а не через JSX-обёртки.
+  а не через JSX-обёртки. Роли — параметром `roles: [...]`.
 - `tsconfig` включает `erasableSyntaxOnly` — **нельзя `enum`** (используем const-объект + union,
   см. `SessionStatus`) и `verbatimModuleSyntax` — импорт типов через `import type`.
+- фича с UI экспортирует namespace-объект: `{ View, Trigger?, model: { ... } }`.
+
+**Пагинация — только курсорная**, без offset и без серверной сортировки: `<Table pagination={false}>`
+плюс кнопка «Загрузить ещё», пока `nextCursor !== null`.
+
+**Нестыковка конвенций в `shared/api`, которую надо копировать как есть:** list-методы возвращают
+**сырой axios-response** (`base.get<CursorPage<T>>(...)`), а мутации разворачивают
+(`.then((r) => r.data)`). Поэтому модели читают `{ result: { data } }` у списков и `result` у мутаций.
+
+## Заказы
+
+Единственный раздел с фильтрами и поллингом — до него ни того, ни другого в проекте не было.
+
+- `pages/orders` — список. Фильтр по статусу (antd `Segmented` + стор `$status` в factory),
+  смена фильтра инвалидирует список через тот же `purge`, что и мутация статуса.
+- **Поллинг новых заказов**: `patronum.interval` раз в 30 с, пока роут открыт (`start` на
+  `opened`, `stop` на `closed` — иначе интервал стучит в фоне). Появившиеся id сравниваются
+  с предыдущими, и на разницу показывается antd-нотификация через `shared/lib/notification.ts`
+  — оператор был написан давно, но до заказов не вызывался ни разу. WebSocket'ов в бэкенде
+  нет и заводить их ради одного экрана не стали.
+- `pages/order-detail` — **первая в проекте страница с параметром роута** (`route.$params`);
+  раньше всё редактировалось в модалках. Состав, контакты, таймлайн (`antd Steps`) и ссылка
+  на **маршрут** в Яндекс.Картах по `deliveryLat/Lng`.
+- `features/order/change-status` — модалка. Список доступных статусов берётся из
+  `entities/order.ALLOWED_TRANSITIONS`. Это **копия** карты переходов с бэкенда
+  (`src/orders/order-status.ts`) — она нужна лишь чтобы не показывать заведомо недоступные
+  варианты; источник правды остаётся на сервере, при расхождении придёт 400.
 
 ## Auth (важно)
 
@@ -56,17 +93,32 @@ src/
 - `POST /admin/auth/login` — `{ email, password }` (строго эти поля) → `User` + cookie.
 - `GET  /admin/auth/me` → `User` (200) / 401.
 - `POST /admin/auth/logout` → `{ success: true }`.
+- `POST /admin/auth/telegram/link` → `{ nonce, botUrl, expiresIn }` — ссылка на бота.
 
-`User = { id, phone, email, role, sellerId }`, `role ∈ 'SUPER_ADMIN' | 'SELLER' | 'CUSTOMER'`
-(роль используется строкой по месту, без карт доступа).
+`User = { id, phone, email, role, sellerId, telegramId }`,
+`role ∈ 'SUPER_ADMIN' | 'SELLER' | 'CUSTOMER'` (роль используется строкой по месту).
+
+**Привязка Telegram** (`features/auth/link-telegram`, кнопка в сайдбаре). Продавец входит сюда
+по паролю, поэтому бот не знает, кому слать заказы. Кнопка выдаёт ссылку/QR на
+`t.me/<bot>?start=sel_<nonce>`; после Start заказы приходят продавцу в чат, и статусы он может
+менять прямо там.
+
+**Один Telegram = одна роль.** Аккаунт, который уже вошёл в мобилку покупателем, привязать
+к магазину нельзя — и наоборот, под привязанным к магазину Telegram нельзя войти в мобилку.
+Отказ приходит **в чат бота** (не в админку: привязку подтверждает бот, а не эта форма),
+поэтому модалка просто ждёт — после Start обнови страницу и увидишь «Telegram привязан»
+либо прежнюю кнопку. Кому нужны обе роли — заводит второй Telegram под магазин.
+Подробности и тексты — `stealth-backend/src/common/telegram-identity.ts`.
 
 ## Команды
 
 - `pnpm dev` — дев-сервер на **5173** (этот origin уже в CORS бэкенда).
 - `pnpm build` — `tsc -b && vite build`.
-- `pnpm lint` — oxlint.
+- `pnpm lint:ts` — `tsc --noEmit`; `pnpm lint:eslint` — eslint; `pnpm lint:all` — оба параллельно.
 
-Тестовый логин (сид бэкенда): `admin@stealth.local` / `password123` (SUPER_ADMIN).
+Тестовые логины (сид бэкенда, пароль у всех `password123`):
+`admin@stealth.local` (SUPER_ADMIN), `seller@stealth.local` и `seller2@stealth.local` (SELLER).
+Двух продавцов держим намеренно — на них проверяется разбиение заказа и скоуп видимости.
 
 ## Соседние проекты-референсы
 

@@ -25,13 +25,7 @@ export const SelectField = <T extends FieldValues>({
   return (
     <div style={{ marginBottom: 16 }}>
       {!!label && <Typography.Text style={{ display: 'block', marginBottom: 6 }}>{label}</Typography.Text>}
-      <Select
-        {...field}
-        size={size}
-        options={options}
-        status={error ? 'error' : undefined}
-        style={{ width: '100%' }}
-      />
+      <Select {...field} size={size} options={options} status={error ? 'error' : undefined} style={{ width: '100%' }} />
       {!!error && (
         <Typography.Text type="danger" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
           {error.message}

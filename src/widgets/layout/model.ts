@@ -2,7 +2,14 @@ import { combine } from 'effector';
 import { or } from 'patronum';
 import { createElement } from 'react';
 import type { RouteInstance } from 'atomic-router';
-import { HomeOutlined, AppstoreOutlined, ShopOutlined, UnorderedListOutlined, TagsOutlined } from '@ant-design/icons';
+import {
+  HomeOutlined,
+  AppstoreOutlined,
+  ShopOutlined,
+  ShoppingCartOutlined,
+  UnorderedListOutlined,
+  TagsOutlined,
+} from '@ant-design/icons';
 
 import { userModel, type Role } from '@/entities/user';
 import { routes } from '@/shared/config/routing';
@@ -14,6 +21,13 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
     roles: ['SELLER', 'SUPER_ADMIN'],
     key: 'home',
     icon: HomeOutlined,
+  },
+  {
+    route: routes.orders.root,
+    label: 'Заказы',
+    roles: ['SELLER', 'SUPER_ADMIN'],
+    key: 'orders',
+    icon: ShoppingCartOutlined,
   },
   {
     route: routes.categories,
@@ -51,6 +65,7 @@ export const $activeRoutes = combine({
   sellers: or(routes.sellers.root.$isOpened, routes.sellers.seller.$isOpened),
   catalog: or(routes.catalog.root.$isOpened, routes.catalog.item.$isOpened),
   listing: or(routes.listing.root.$isOpened, routes.listing.item.$isOpened),
+  orders: or(routes.orders.root.$isOpened, routes.orders.order.$isOpened),
 }).map((routes) =>
   Object.entries(routes)
     .filter(([_, value]) => value)

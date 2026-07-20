@@ -1,5 +1,5 @@
 import { base } from './instances';
-import type { LoginPayload, User } from './types';
+import type { BotLinkSession, LoginPayload, User } from './types';
 
 export const auth = {
   /** POST /admin/auth/login — email + password, ставит сессионную cookie. */
@@ -8,4 +8,9 @@ export const auth = {
   getMe: () => base.get<User>('/auth/me').then((r) => r.data),
   /** POST /admin/auth/logout — завершает сессию. */
   logout: () => base.post<{ success: boolean }>('/auth/logout').then((r) => r.data),
+  /**
+   * POST /admin/auth/telegram/link — ссылка на бота для привязки Telegram.
+   * После привязки заказы падают продавцу в чат, и статусы он меняет прямо там.
+   */
+  linkTelegram: () => base.post<BotLinkSession>('/auth/telegram/link').then((r) => r.data),
 };

@@ -8,6 +8,15 @@ const COLOR_BY_STATUS: Record<string, string> = {
   SUSPENDED: 'red',
   DRAFT: 'default',
   ARCHIVED: 'default',
+
+  // Статусы заказа. NEW выделен синим — это то, что требует внимания продавца.
+  NEW: 'blue',
+  CONFIRMED: 'cyan',
+  ASSEMBLING: 'gold',
+  DELIVERING: 'purple',
+  ARRIVED: 'magenta',
+  DELIVERED: 'green',
+  CANCELLED: 'red',
 };
 
 export const StatusTag = <Status extends string>({

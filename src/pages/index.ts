@@ -7,8 +7,10 @@ import { NotFound } from './not-found';
 import { Forbidden } from './forbidden/ui';
 import { Catalog } from './catalog';
 import { Listing } from './listing';
+import { OrderDetail } from './order-detail';
+import { Orders } from './orders';
 import { Sellers } from './sellers';
 
 export const Pages = createRoutesView({
-  routes: [Auth, Home, Categories, Catalog, Listing, Sellers, NotFound, Forbidden],
+  routes: [Auth, Home, Categories, Catalog, Listing, Orders, OrderDetail, Sellers, NotFound, Forbidden],
 });
