@@ -1,2 +1,7 @@
+# Монорепы тут нет, но pnpm 9 (его использует билдер Railway) требует
+# packages в workspace-файле — без него install падает «packages field missing».
+packages: []
+
+# allowBuilds — поле pnpm 10+; pnpm 9 его игнорирует и запускает postinstall сам.
 allowBuilds:
   unrs-resolver: true
