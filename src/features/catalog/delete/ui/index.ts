@@ -1,0 +1,1 @@
+export { CatalogDeleteButton } from './ui';

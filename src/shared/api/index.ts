@@ -8,12 +8,14 @@ import { sellers } from './sellers';
 export type {
   BotLinkSession,
   CatalogItem,
+  CatalogItemPayload,
   Category,
   CategoryPayload,
   ChangeOrderStatusPayload,
   CursorPage,
   FindOrdersParams,
   Listing,
+  ListingPayload,
   ListingStatus,
   LoginPayload,
   Order,
@@ -26,7 +28,9 @@ export type {
   Role,
   Seller,
   SellerStatus,
+  UpdateCatalogItemStatusPayload,
   UpdateOrderCourierPayload,
+  UpdateSellerStatusPayload,
   User,
 } from './types';
 export { getApiErrorMessage } from './error';

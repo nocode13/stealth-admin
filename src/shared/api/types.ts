@@ -72,6 +72,18 @@ export type CatalogItem = {
   updatedAt: string;
 };
 
+export interface CatalogItemPayload {
+  name: string;
+  slug: string;
+  categoryId: string;
+  description?: string;
+  unit?: string;
+}
+
+export interface UpdateCatalogItemStatusPayload {
+  status: ReviewStatus;
+}
+
 export type Listing = {
   id: string;
   sellerId: string;
@@ -85,6 +97,14 @@ export type Listing = {
   updatedAt: string;
 };
 
+export interface ListingPayload {
+  catalogItemId: string;
+  price: number;
+  currency?: string;
+  stock: number;
+  status?: ListingStatus;
+}
+
 export type Seller = {
   id: string;
   name: string;
@@ -93,6 +113,10 @@ export type Seller = {
   createdAt: string;
   updatedAt: string;
 };
+
+export interface UpdateSellerStatusPayload {
+  status: SellerStatus;
+}
 
 export type OrderStatus =
   | 'NEW'

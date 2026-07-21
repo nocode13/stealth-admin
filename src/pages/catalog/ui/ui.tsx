@@ -1,8 +1,12 @@
 /* eslint-disable react-refresh/only-export-components -- createLazyPage требует из модуля страницы экспорт component + createModel */
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Avatar, Button, Flex, Table, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
+import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
+import { CatalogDelete } from '@/features/catalog/delete';
 import { StatusTag, type CatalogItem } from '@/entities/catalog';
+import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate } from '@/shared/lib/format';
 import { withTitle } from '@/shared/ui/with-title';
@@ -17,6 +21,11 @@ const Page = ({ model }: LazyPageProps<Model>) => {
 
   return (
     <Flex vertical gap="middle" style={{ width: '100%' }}>
+      <Flex justify="flex-end">
+        <Button type="primary" onClick={() => CatalogCreateEdit.model.createTriggered()} icon={<PlusOutlined />}>
+          Создать
+        </Button>
+      </Flex>
       <Table
         rowKey="id"
         dataSource={catalog}
@@ -32,11 +41,14 @@ const Page = ({ model }: LazyPageProps<Model>) => {
           </Button>
         </Flex>
       )}
+      <CatalogCreateEdit.View />
     </Flex>
   );
 };
 
 const useColumns = (): TableProps<CatalogItem>['columns'] => {
+  const [role] = useUnit([userModel.$role]);
+
   return [
     {
       title: 'Изображение',
@@ -74,6 +86,17 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
       title: 'Создано',
       key: 'createdAt',
       render: (_, item) => formatDate(item.createdAt),
+    },
+    {
+      key: 'actions',
+      render: (_, item) =>
+        (role === 'SUPER_ADMIN' || !!item.sellerId) && (
+          <Flex gap="small">
+            <Button size="small" icon={<EditOutlined />} onClick={() => CatalogCreateEdit.model.editTriggered(item)} />
+            <CatalogDelete.View item={item} />
+          </Flex>
+        ),
+      width: 90,
     },
   ];
 };

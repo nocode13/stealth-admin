@@ -1,6 +1,7 @@
-import { createEffect, createEvent, createStore, sample } from 'effector';
+import { createEffect, createEvent, createStore, merge, sample } from 'effector';
 import { cache, concurrency, createQuery } from 'effector-refetch';
 
+import { SellerChangeStatus } from '@/features/seller/change-status';
 import { userModel } from '@/entities/user';
 import type { Seller } from '@/entities/seller';
 import { api } from '@/shared/api';
@@ -27,8 +28,11 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
     (_, { result: { data } }) => data.nextCursor,
   );
 
+  const purge = merge([SellerChangeStatus.model.mutated]);
+
   sample({
-    clock: authorizedRoute.opened,
+    clock: [authorizedRoute.opened, purge],
+    filter: authorizedRoute.$isOpened,
     target: fetchPageQuery.start.prepend(() => undefined),
   });
 
@@ -40,13 +44,18 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
   });
 
   sample({
-    clock: authorizedRoute.closed,
+    clock: purge,
     target: [$nextCursor.reinit, $sellers.reinit],
+  });
+
+  sample({
+    clock: authorizedRoute.closed,
+    target: [$nextCursor.reinit, $sellers.reinit, SellerChangeStatus.model.reset],
   });
 
   fRetry(fetchPageQuery, { times: 2, delay: 300 });
   concurrency(fetchPageQuery, { strategy: 'TAKE_LATEST' });
-  cache(fetchPageQuery, { staleAfter: 5000 });
+  cache(fetchPageQuery, { staleAfter: 5000, purge });
 
   message({
     clock: fetchPageQuery.finished.fail.map((res) => res.error),

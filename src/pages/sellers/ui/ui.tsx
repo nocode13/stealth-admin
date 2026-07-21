@@ -1,7 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- createLazyPage требует из модуля страницы экспорт component + createModel */
+import { EditOutlined } from '@ant-design/icons';
 import { Button, Flex, Table, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
+import { SellerChangeStatus } from '@/features/seller/change-status';
 import { StatusTag, type Seller } from '@/entities/seller';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate } from '@/shared/lib/format';
@@ -32,6 +34,7 @@ const Page = ({ model }: LazyPageProps<Model>) => {
           </Button>
         </Flex>
       )}
+      <SellerChangeStatus.View />
     </Flex>
   );
 };
@@ -51,6 +54,13 @@ const useColumns = (): TableProps<Seller>['columns'] => {
       title: 'Создано',
       key: 'createdAt',
       render: (_, seller) => formatDate(seller.createdAt),
+    },
+    {
+      key: 'actions',
+      render: (_, seller) => (
+        <Button size="small" icon={<EditOutlined />} onClick={() => SellerChangeStatus.model.triggered(seller)} />
+      ),
+      width: 57,
     },
   ];
 };

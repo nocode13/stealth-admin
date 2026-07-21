@@ -31,7 +31,9 @@ src/
               index.ts — createRoutesView([...])
   widgets/    layout/ — сайдбар, меню (MENU_ROUTES + $activeRoutes), кнопки привязки TG и выхода
   features/   auth/login, auth/logout, auth/link-telegram,
-              category/creat-edit (sic — так называется директория), order/change-status
+              category/creat-edit (sic — так называется директория), order/change-status,
+              catalog/creat-edit, catalog/delete, listing/creat-edit, listing/delete,
+              seller/change-status
   entities/   user/ ($user, $session, sessionFx, chainAuthorized/chainAnonymous),
               category/, catalog/, listing/, seller/, order/
   shared/
@@ -55,6 +57,9 @@ src/
 - `tsconfig` включает `erasableSyntaxOnly` — **нельзя `enum`** (используем const-объект + union,
   см. `SessionStatus`) и `verbatimModuleSyntax` — импорт типов через `import type`.
 - фича с UI экспортирует namespace-объект: `{ View, Trigger?, model: { ... } }`.
+- удаление сущности — свой паттерн (`features/{catalog,listing}/delete`): без модалки/disclosure,
+  подтверждение через antd `Popconfirm` прямо в таблице; `deleteTriggered<T>` → `attach`-эффект →
+  `mutated<T>` для инвалидации списка на странице. Экспортирует `{ View: <EntityDeleteButton>, model }`.
 
 **Пагинация — только курсорная**, без offset и без серверной сортировки: `<Table pagination={false}>`
 плюс кнопка «Загрузить ещё», пока `nextCursor !== null`.
@@ -81,6 +86,29 @@ src/
   `entities/order.ALLOWED_TRANSITIONS`. Это **копия** карты переходов с бэкенда
   (`src/orders/order-status.ts`) — она нужна лишь чтобы не показывать заведомо недоступные
   варианты; источник правды остаётся на сервере, при расхождении придёт 400.
+
+## Каталог, продажные позиции, продавцы
+
+- **Категория** (`features/category/creat-edit`) — эталонный create/edit-паттерн, скопированный
+  для каталога и листингов. У категории на бэкенде нет DELETE — удаления там и не будет.
+- **Каталог** (`features/catalog/creat-edit` + `features/catalog/delete`) — полный CRUD.
+  Категория для позиции выбирается селектом (свой fetch на `api.category.findAll({ limit: 100 })`
+  при каждом открытии модалки, отфильтрован по `status === 'APPROVED'` — переиспользовать стор
+  страницы `pages/categories` нельзя, он инкапсулирован в её `factory()`). Статус (`ReviewStatus`)
+  меняется **отдельным** эндпоинтом `PATCH /catalog/:id/status` (в отличие от category, где статус
+  входит в обычный `update`) — поэтому в модели есть отдельный `updateStatusFx`, вызываемый после
+  `updateFx`, только если роль `SUPER_ADMIN` и статус реально изменился. Изображение —
+  `POST /catalog/:id/image` (multipart, только в edit-режиме — эндпоинту нужен существующий `id`);
+  на фронте `Content-Type` инстанса `base` явно сбрасывается в `undefined` на этот запрос, чтобы
+  браузер сам проставил multipart-boundary.
+- **Продажные позиции** (`features/listing/creat-edit` + `features/listing/delete`) — полный CRUD,
+  доступно только продавцу (`roles: ['SELLER']`), без разделения мастер/продавец, поэтому Edit/Delete
+  в таблице показаны без доп. ролевых гейтов. `status` (`ListingStatus`) — обычное поле формы в обоих
+  режимах: у листинга нет review-процесса и transition-map на бэкенде, значение принимается любое.
+  `price`/`stock` — числовые поля через `TextField` + `z.coerce.number()` (отдельный `NumberField`
+  сознательно не заводили).
+- **Продавцы** (`features/seller/change-status`, копия `features/order/change-status`) — на бэкенде
+  нет create/update/delete для продавца (регистрируются отдельно), доступна только смена статуса.
 
 ## Auth (важно)
 
@@ -119,6 +147,13 @@ src/
 Тестовые логины (сид бэкенда, пароль у всех `password123`):
 `admin@stealth.local` (SUPER_ADMIN), `seller@stealth.local` и `seller2@stealth.local` (SELLER).
 Двух продавцов держим намеренно — на них проверяется разбиение заказа и скоуп видимости.
+
+## Поддержание этого файла
+
+После каждого значимого изменения архитектуры, конвенций или структуры проекта (новый раздел,
+новый паттерн фичи, смена соглашения в `shared/api` и т.п.) — обновляй этот файл, чтобы он не
+расходился с кодом. Точечные правки внутри уже описанного паттерна отдельного упоминания не
+требуют — обновлять нужно то, что меняет саму карту проекта.
 
 ## Соседние проекты-референсы
 
