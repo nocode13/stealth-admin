@@ -148,6 +148,7 @@ sample({
   source: { values: form.$formValues, role: userModel.$role, editing: $editingItem },
   filter: ({ role, values, editing }) =>
     !(role === 'SUPER_ADMIN' && !!values.status && values.status !== editing?.status),
+  fn: (_, item) => item,
   target: mutated,
 });
 

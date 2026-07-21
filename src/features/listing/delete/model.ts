@@ -1,4 +1,4 @@
-import { attach, createEvent, sample } from 'effector';
+import { createEffect, createEvent, sample } from 'effector';
 
 import type { Listing } from '@/entities/listing';
 import { api } from '@/shared/api';
@@ -7,9 +7,7 @@ import { message } from '@/shared/lib/message';
 export const deleteTriggered = createEvent<Listing>();
 export const mutated = createEvent<Listing>();
 
-export const deleteFx = attach({
-  effect: (item: Listing) => api.listing.remove(item.id).then(() => item),
-});
+export const deleteFx = createEffect((item: Listing) => api.listing.remove(item.id).then(() => item));
 
 export const $mutating = deleteFx.pending;
 
