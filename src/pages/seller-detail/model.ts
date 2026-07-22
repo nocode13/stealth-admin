@@ -108,8 +108,8 @@ export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
   sample({
     clock: loadMoreClicked,
     source: { params: authorizedRoute.$params, cursor: $nextCursor },
-    filter: ({ cursor }): cursor is string => cursor !== null,
-    fn: ({ params, cursor }) => ({ sellerId: params.id, cursor }),
+    filter: ({ cursor }) => cursor !== null,
+    fn: ({ params, cursor }) => ({ sellerId: params.id, cursor: cursor as string }),
     target: fetchOrdersQuery.start,
   });
 

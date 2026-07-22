@@ -28,9 +28,7 @@ export type {
   Role,
   Seller,
   SellerStatus,
-  UpdateCatalogItemStatusPayload,
   UpdateOrderCourierPayload,
-  UpdateSellerStatusPayload,
   User,
 } from './types';
 export { getApiErrorMessage } from './error';
