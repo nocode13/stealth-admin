@@ -1,12 +1,12 @@
-import { attach, createEffect, createEvent, createStore, merge, sample, split } from 'effector';
+import { attach, createEffect, createEvent, createStore, merge, restore, sample, split } from 'effector';
 import { z } from 'zod/v4';
-import { delay, or } from 'patronum';
+import { debounce, delay, or } from 'patronum';
+import { createQuery } from 'effector-refetch';
 
 import type { Category } from '@/entities/category';
 import type { CatalogItem } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
-import type { ReviewStatus } from '@/shared/api';
 import { createDisclosure } from '@/shared/lib/disclosure';
 import { createForm } from '@/shared/lib/form';
 import { message } from '@/shared/lib/message';
@@ -38,30 +38,85 @@ export const disclosure = createDisclosure();
 export const createTriggered = createEvent();
 export const editTriggered = createEvent<CatalogItem>();
 export const reset = createEvent();
-export const mutated = createEvent<CatalogItem>();
 export const validated = createEvent();
+export const categoriesSearchChanged = createEvent<string>();
 
-export const $editingItem = createStore<CatalogItem | null>(null)
-  .on(editTriggered, (_, item) => item)
-  .reset(disclosure.closed);
-export const $mode = createStore<'create' | 'edit'>('create')
-  .on(createTriggered, () => 'create')
-  .on(editTriggered, () => 'edit');
+export const $editingItem = createStore<CatalogItem | null>(null);
+export const $mode = createStore<'create' | 'edit'>('create');
 
-const categoryOptionsFetchedFx = createEffect(() => api.category.findAll({ limit: 100 }).then((r) => r.data));
+export const $categories = createStore<Category[]>([]);
+export const $categoriesSearch = restore(categoriesSearchChanged, '');
 
-export const $categoryOptions = createStore<Category[]>([]).on(categoryOptionsFetchedFx.doneData, (_, page) =>
-  page.items.filter((category) => category.status === 'APPROVED'),
-);
+const fetchCategoriesQuery = createQuery({
+  effect: createEffect((search?: string) =>
+    api.category.findAll({ limit: 100, status: 'APPROVED', search: search || undefined }),
+  ),
+  cache: { staleAfter: 10_000 },
+  concurrency: 'TAKE_LATEST',
+});
+
+export const createFx = attach({
+  source: form.$formValues,
+  effect: (values: FormValues) =>
+    api.catalog.create({
+      name: values.name,
+      slug: values.slug,
+      categoryId: values.categoryId,
+      description: values.description || undefined,
+      unit: values.unit || undefined,
+      status: values.status,
+    }),
+});
+
+export const updateFx = attach({
+  source: { values: form.$formValues, editing: $editingItem, role: userModel.$role },
+  effect: ({ values, editing, role }) => {
+    if (!editing) throw new Error('No catalog item');
+    return api.catalog.update(editing.id, {
+      name: values.name,
+      slug: values.slug,
+      categoryId: values.categoryId,
+      description: values.description || undefined,
+      unit: values.unit || undefined,
+      status: role === 'SUPER_ADMIN' ? values.status : undefined,
+    });
+  },
+});
+
+export const uploadImageFx = attach({
+  source: $editingItem,
+  effect: (item, file: File) => {
+    if (!item) throw new Error('Сначала сохраните позицию');
+    return api.catalog.uploadImage(item.id, file);
+  },
+});
+
+export const $mutating = or(createFx.pending, updateFx.pending, uploadImageFx.pending);
+export const mutated = merge([createFx.done, updateFx.done, uploadImageFx.done]);
+export const $categoriesFetching = fetchCategoriesQuery.$pending;
+
+$mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
 
 sample({
   clock: [createTriggered, editTriggered],
-  target: categoryOptionsFetchedFx,
+  fn: () => undefined,
+  target: [fetchCategoriesQuery.start, disclosure.opened],
 });
 
 sample({
-  clock: [createTriggered, editTriggered],
-  target: disclosure.opened,
+  clock: [editTriggered, uploadImageFx.doneData],
+  target: $editingItem,
+});
+
+sample({
+  clock: fetchCategoriesQuery.finished.done,
+  fn: (res) => res.result.data.items,
+  target: $categories,
+});
+
+sample({
+  clock: debounce(categoriesSearchChanged, 300),
+  target: fetchCategoriesQuery.start,
 });
 
 sample({
@@ -77,50 +132,6 @@ sample({
   target: form.resetFx,
 });
 
-export const createFx = attach({
-  source: form.$formValues,
-  effect: (values: FormValues) =>
-    api.catalog.create({
-      name: values.name,
-      slug: values.slug,
-      categoryId: values.categoryId,
-      description: values.description || undefined,
-      unit: values.unit || undefined,
-    }),
-});
-
-export const updateFx = attach({
-  source: { values: form.$formValues, editing: $editingItem },
-  effect: ({ values, editing }) => {
-    if (!editing) throw new Error('No catalog item');
-    return api.catalog.update(editing.id, {
-      name: values.name,
-      slug: values.slug,
-      categoryId: values.categoryId,
-      description: values.description || undefined,
-      unit: values.unit || undefined,
-    });
-  },
-});
-
-export const updateStatusFx = attach({
-  source: { editing: $editingItem, role: userModel.$role },
-  effect: ({ editing, role }, status: ReviewStatus) => {
-    if (!editing || role !== 'SUPER_ADMIN') throw new Error('Not allowed');
-    return api.catalog.updateStatus(editing.id, { status });
-  },
-});
-
-export const uploadImageFx = attach({
-  source: $editingItem,
-  effect: (item, file: File) => {
-    if (!item) throw new Error('Сначала сохраните позицию');
-    return api.catalog.uploadImage(item.id, file);
-  },
-});
-
-export const $mutating = or(createFx.pending, updateFx.pending, updateStatusFx.pending, uploadImageFx.pending);
-
 split({
   source: validated,
   match: $mode,
@@ -131,49 +142,24 @@ split({
 });
 
 sample({
-  clock: updateFx.doneData,
-  source: { values: form.$formValues, role: userModel.$role, editing: $editingItem },
-  filter: ({ role, values, editing }) => role === 'SUPER_ADMIN' && !!values.status && values.status !== editing?.status,
-  fn: ({ values }) => values.status!,
-  target: updateStatusFx,
-});
-
-sample({
-  clock: createFx.doneData,
-  target: mutated,
-});
-
-sample({
-  clock: updateFx.doneData,
-  source: { values: form.$formValues, role: userModel.$role, editing: $editingItem },
-  filter: ({ role, values, editing }) =>
-    !(role === 'SUPER_ADMIN' && !!values.status && values.status !== editing?.status),
-  fn: (_, item) => item,
-  target: mutated,
-});
-
-sample({
-  clock: updateStatusFx.doneData,
-  target: mutated,
-});
-
-sample({
-  clock: uploadImageFx.doneData,
-  target: [$editingItem, mutated],
-});
-
-sample({
   clock: [reset, mutated],
   target: disclosure.closed,
 });
 
 sample({
   clock: delay(disclosure.closed, 100),
-  target: [form.resetFx.prepend(() => DEFAULT_VALUES), $editingItem.reinit, $mode.reinit],
+  target: [
+    form.resetFx.prepend(() => DEFAULT_VALUES),
+    $editingItem.reinit,
+    $mode.reinit,
+    $categories.reinit,
+    $categoriesSearch.reinit,
+  ],
 });
 
 message({ clock: mutated, type: 'success', content: 'Позиция каталога сохранена' });
+
 message({
-  clock: merge([createFx.fail, updateFx.fail, updateStatusFx.fail, uploadImageFx.fail]).map(({ error }) => error),
+  clock: merge([createFx.failData, updateFx.failData, uploadImageFx.failData]),
   errorHandle: true,
 });

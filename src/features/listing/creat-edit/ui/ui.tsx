@@ -4,12 +4,10 @@ import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
 import { useId } from 'react';
 
-import { STATUS_LABELS } from '@/entities/listing';
-import { SelectField, TextField } from '@/shared/ui/form';
+import { listingConfig } from '@/entities/listing';
+import { NumberField, SelectField, TextField } from '@/shared/ui/form';
 
 import * as model from '../model';
-
-const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
 export const ListingModal = () => {
   const [isOpen, editingListing, mutating, catalogItemOptions, validated, closeRequested] = useUnit([
@@ -28,6 +26,7 @@ export const ListingModal = () => {
     defaultValues: model.DEFAULT_VALUES,
   });
   model.form.useBindFormWithModel({ form });
+  const statusOptions = listingConfig.useStatusOptions();
 
   return (
     <Modal
@@ -43,12 +42,13 @@ export const ListingModal = () => {
           control={form.control}
           name="catalogItemId"
           label="Товар"
+          required
           options={catalogItemOptions.map((item) => ({ value: item.id, label: item.name }))}
         />
-        <TextField control={form.control} name="price" label="Цена" />
+        <NumberField control={form.control} name="price" label="Цена" min={0} step={0.01} required />
         <TextField control={form.control} name="currency" label="Валюта" />
-        <TextField control={form.control} name="stock" label="Остаток" />
-        <SelectField control={form.control} name="status" label="Статус" options={STATUS_OPTIONS} />
+        <NumberField control={form.control} name="stock" label="Остаток" min={0} step={1} required />
+        <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
       </form>
     </Modal>
   );

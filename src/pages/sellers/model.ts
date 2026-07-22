@@ -1,9 +1,11 @@
-import { createEffect, createEvent, createStore, merge, sample } from 'effector';
-import { cache, concurrency, createQuery } from 'effector-refetch';
+import { createEffect, createEvent, createStore, sample, type StoreValue } from 'effector';
+import { createQuery } from 'effector-refetch';
+import { spread } from 'patronum';
 
-import { SellerChangeStatus } from '@/features/seller/change-status';
-import { userModel } from '@/entities/user';
+import { SellerCreateEdit } from '@/features/seller/creat-edit';
+import { SellerFilters } from '@/features/seller/filter';
 import type { Seller } from '@/entities/seller';
+import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
 import type { LazyPageFactoryParams } from '@/shared/lib/create-lazy-page';
 import { message } from '@/shared/lib/message';
@@ -15,47 +17,69 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
 
   const loadMoreClicked = createEvent();
 
+  const $sellers = createStore<Seller[]>([]);
+  const $nextCursor = createStore<string | null>(null);
+
+  const purge = SellerCreateEdit.model.mutated;
+
   const fetchPageQuery = createQuery({
-    effect: createEffect((cursor?: string) => api.sellers.findAll({ cursor, limit: PAGE_SIZE })),
+    effect: createEffect(
+      ({ cursor, filters }: { cursor?: string | null; filters: StoreValue<typeof SellerFilters.model.$filters> }) =>
+        api.sellers.findAll({
+          cursor: cursor || undefined,
+          limit: PAGE_SIZE,
+          search: filters.search || undefined,
+          status: filters.status || undefined,
+        }),
+    ),
+    concurrency: 'TAKE_LATEST',
+    cache: { staleAfter: 5000, purge },
   });
 
-  const $sellers = createStore<Seller[]>([]).on(fetchPageQuery.finished.done, (items, { result: { data } }) =>
-    items.concat(data.items),
-  );
-
-  const $nextCursor = createStore<string | null>(null).on(
-    fetchPageQuery.finished.done,
-    (_, { result: { data } }) => data.nextCursor,
-  );
-
-  const purge = merge([SellerChangeStatus.model.mutated]);
+  fRetry(fetchPageQuery, { times: 2, delay: 300 });
 
   sample({
     clock: [authorizedRoute.opened, purge],
+    source: { filters: SellerFilters.model.$filters },
     filter: authorizedRoute.$isOpened,
-    target: fetchPageQuery.start.prepend(() => undefined),
-  });
-
-  sample({
-    clock: loadMoreClicked,
-    source: $nextCursor,
-    filter: (cursor): cursor is string => cursor !== null,
     target: fetchPageQuery.start,
   });
 
   sample({
+    clock: loadMoreClicked,
+    source: { cursor: $nextCursor, filters: SellerFilters.model.$filters },
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: SellerFilters.model.filtersChanged,
+    source: { filters: SellerFilters.model.$filters },
+    fn: ({ filters }) => ({ cursor: undefined, filters }),
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: fetchPageQuery.finished.done,
+    source: $sellers,
+    fn: (sellers, res) => ({
+      sellers: res.params.cursor ? [...sellers, ...res.result.data.items] : res.result.data.items,
+      cursor: res.result.data.nextCursor,
+    }),
+    target: spread({
+      sellers: $sellers,
+      cursor: $nextCursor,
+    }),
+  });
+
+  sample({
     clock: purge,
-    target: [$nextCursor.reinit, $sellers.reinit],
+    target: [$nextCursor.reinit],
   });
 
   sample({
     clock: authorizedRoute.closed,
-    target: [$nextCursor.reinit, $sellers.reinit, SellerChangeStatus.model.reset],
+    target: [SellerCreateEdit.model.reset],
   });
-
-  fRetry(fetchPageQuery, { times: 2, delay: 300 });
-  concurrency(fetchPageQuery, { strategy: 'TAKE_LATEST' });
-  cache(fetchPageQuery, { staleAfter: 5000, purge });
 
   message({
     clock: fetchPageQuery.finished.fail.map((res) => res.error),

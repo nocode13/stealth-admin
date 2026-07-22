@@ -34,15 +34,14 @@ export const disclosure = createDisclosure();
 export const createTriggered = createEvent();
 export const editTriggered = createEvent<Listing>();
 export const reset = createEvent();
-export const mutated = createEvent<Listing>();
 export const validated = createEvent();
 
-export const $editingListing = createStore<Listing | null>(null)
-  .on(editTriggered, (_, listing) => listing)
-  .reset(disclosure.closed);
-export const $mode = createStore<'create' | 'edit'>('create')
-  .on(createTriggered, () => 'create')
-  .on(editTriggered, () => 'edit');
+export const $editingListing = createStore<Listing | null>(null);
+export const $mode = createStore<'create' | 'edit'>('create');
+
+$mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
+
+sample({ clock: editTriggered, target: $editingListing });
 
 const catalogItemOptionsFetchedFx = createEffect(() => api.catalog.findAll({ limit: 100 }).then((r) => r.data));
 
@@ -77,9 +76,11 @@ export const createFx = attach({
   effect: (values: FormValues) =>
     api.listing.create({
       catalogItemId: values.catalogItemId,
-      price: values.price,
+      // `$formValues` — сырой снапшот из form.watch(), zod-коэрсия (z.coerce.number())
+      // применяется только валидатором и до эффекта не доходит — приводим типы вручную.
+      price: Number(values.price),
       currency: values.currency || undefined,
-      stock: values.stock,
+      stock: Math.trunc(Number(values.stock)),
       status: values.status,
     }),
 });
@@ -90,15 +91,16 @@ export const updateFx = attach({
     if (!editing) throw new Error('No listing');
     return api.listing.update(editing.id, {
       catalogItemId: values.catalogItemId,
-      price: values.price,
+      price: Number(values.price),
       currency: values.currency || undefined,
-      stock: values.stock,
+      stock: Math.trunc(Number(values.stock)),
       status: values.status,
     });
   },
 });
 
 export const $mutating = or(createFx.pending, updateFx.pending);
+export const mutated = merge([createFx.done, updateFx.done]);
 
 split({
   source: validated,
@@ -107,11 +109,6 @@ split({
     create: createFx,
     edit: updateFx,
   },
-});
-
-sample({
-  clock: [createFx.doneData, updateFx.doneData],
-  target: mutated,
 });
 
 sample({
@@ -125,4 +122,4 @@ sample({
 });
 
 message({ clock: mutated, type: 'success', content: 'Позиция сохранена' });
-message({ clock: merge([createFx.fail, updateFx.fail]).map(({ error }) => error), errorHandle: true });
+message({ clock: merge([createFx.failData, updateFx.failData]), errorHandle: true });

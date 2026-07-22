@@ -57,6 +57,13 @@ export interface CategoryPayload {
   status?: ReviewStatus;
 }
 
+export interface FindCategoriesParams extends CursorPageParams {
+  search?: string;
+  status?: ReviewStatus;
+  /** Только для SUPER_ADMIN — SELLER скоупится по видимости на бэкенде. */
+  sellerId?: string;
+}
+
 export type CatalogItem = {
   id: string;
   name: string;
@@ -78,10 +85,15 @@ export interface CatalogItemPayload {
   categoryId: string;
   description?: string;
   unit?: string;
+  status?: ReviewStatus;
 }
 
-export interface UpdateCatalogItemStatusPayload {
-  status: ReviewStatus;
+export interface FindCatalogParams extends CursorPageParams {
+  search?: string;
+  categoryId?: string;
+  status?: ReviewStatus;
+  /** Только для SUPER_ADMIN — SELLER скоупится по видимости на бэкенде. */
+  sellerId?: string;
 }
 
 export type Listing = {
@@ -105,17 +117,44 @@ export interface ListingPayload {
   status?: ListingStatus;
 }
 
+export interface FindListingsParams extends CursorPageParams {
+  search?: string;
+  categoryId?: string;
+  status?: ListingStatus;
+  minPrice?: number;
+  maxPrice?: number;
+  /** Только для SUPER_ADMIN — SELLER всегда скоупится своим продавцом. */
+  sellerId?: string;
+}
+
 export type Seller = {
   id: string;
   name: string;
+  description: string | null;
+  bannerUrl: string | null;
   status: SellerStatus;
   ownerUserId: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export interface UpdateSellerStatusPayload {
-  status: SellerStatus;
+export interface CreateSellerPayload {
+  name: string;
+  description?: string;
+  ownerEmail: string;
+  ownerPassword: string;
+  ownerPhone?: string;
+}
+
+export interface UpdateSellerPayload {
+  name?: string;
+  description?: string;
+  status?: SellerStatus;
+}
+
+export interface FindSellersParams extends CursorPageParams {
+  search?: string;
+  status?: SellerStatus;
 }
 
 export type OrderStatus =

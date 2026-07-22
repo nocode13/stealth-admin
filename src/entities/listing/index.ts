@@ -1,9 +1,9 @@
-import type { Listing } from '@/shared/api/types';
+import { statusOptions, useStatusOptions } from './config';
 
+export { StatusTag } from './ui';
 export { type Listing } from '@/shared/api/types';
 
-export const STATUS_LABELS: Record<Listing['status'], string> = {
-  DRAFT: 'Черновик',
-  ACTIVE: 'Активна',
-  ARCHIVED: 'В архиве',
+export const listingConfig = {
+  statusOptions,
+  useStatusOptions,
 };

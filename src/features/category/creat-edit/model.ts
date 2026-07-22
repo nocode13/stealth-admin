@@ -34,15 +34,14 @@ export const disclosure = createDisclosure();
 export const createTriggered = createEvent();
 export const editTriggered = createEvent<Category>();
 export const reset = createEvent();
-export const mutated = createEvent<Category>();
 export const validated = createEvent();
 
-export const $editingCategory = createStore<Category | null>(null)
-  .on(editTriggered, (_, category) => category)
-  .reset(disclosure.closed);
-export const $mode = createStore<'create' | 'edit'>('create')
-  .on(createTriggered, () => 'create')
-  .on(editTriggered, () => 'edit');
+export const $editingCategory = createStore<Category | null>(null);
+export const $mode = createStore<'create' | 'edit'>('create');
+
+$mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
+
+sample({ clock: editTriggered, target: $editingCategory });
 
 export const createFx = attach({
   source: form.$formValues,
@@ -60,6 +59,7 @@ export const updateFx = attach({
 });
 
 export const $mutating = or(createFx.pending, updateFx.pending);
+export const mutated = merge([createFx.done, updateFx.done]);
 
 sample({
   clock: [createTriggered, editTriggered],
@@ -88,11 +88,6 @@ split({
 });
 
 sample({
-  clock: [createFx.doneData, updateFx.doneData],
-  target: mutated,
-});
-
-sample({
   clock: [reset, mutated],
   target: disclosure.closed,
 });
@@ -103,4 +98,4 @@ sample({
 });
 
 message({ clock: mutated, type: 'success', content: 'Категория сохранена' });
-message({ clock: merge([createFx.fail, updateFx.fail]).map(({ error }) => error), errorHandle: true });
+message({ clock: merge([createFx.failData, updateFx.failData]), errorHandle: true });

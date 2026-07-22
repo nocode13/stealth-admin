@@ -1,8 +1,8 @@
 import { base } from './instances';
-import type { CursorPage, CursorPageParams, Listing, ListingPayload } from './types';
+import type { CursorPage, FindListingsParams, Listing, ListingPayload } from './types';
 
 export const listing = {
-  findAll: (params?: CursorPageParams) => base.get<CursorPage<Listing>>('/listings', { params }),
+  findAll: (params?: FindListingsParams) => base.get<CursorPage<Listing>>('/listings', { params }),
   create: (payload: ListingPayload) => base.post<Listing>('/listings', payload).then((r) => r.data),
   update: (id: string, payload: Partial<ListingPayload>) =>
     base.patch<Listing>(`/listings/${id}`, payload).then((r) => r.data),

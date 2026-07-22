@@ -4,6 +4,7 @@ import { Button, Flex, Table, Typography, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
 import { CategoryCreateEdit } from '@/features/category/creat-edit';
+import { CategoryFilters } from '@/features/category/filter';
 import type { Category } from '@/entities/category';
 import { StatusTag } from '@/entities/category';
 import { userModel } from '@/entities/user';
@@ -21,11 +22,17 @@ const Page = ({ model }: LazyPageProps<Model>) => {
 
   return (
     <Flex vertical gap="middle" style={{ width: '100%' }}>
-      <Flex justify="flex-end">
-        <Button type="primary" onClick={() => CategoryCreateEdit.model.createTriggered()} icon={<PlusOutlined />}>
+      <CategoryFilters.View>
+        <Button
+          type="primary"
+          onClick={() => CategoryCreateEdit.model.createTriggered()}
+          icon={<PlusOutlined />}
+          style={{ width: '100%' }}
+        >
           Создать
         </Button>
-      </Flex>
+      </CategoryFilters.View>
+
       <Table
         rowKey="id"
         dataSource={categories}

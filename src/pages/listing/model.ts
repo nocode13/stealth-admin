@@ -1,8 +1,10 @@
-import { createEffect, createEvent, createStore, merge, sample } from 'effector';
-import { cache, concurrency, createQuery } from 'effector-refetch';
+import { createEffect, createEvent, createStore, merge, sample, type StoreValue } from 'effector';
+import { createQuery } from 'effector-refetch';
+import { spread } from 'patronum';
 
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
+import { ListingFilters } from '@/features/listing/filter';
 import type { Listing } from '@/entities/listing';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
@@ -16,47 +18,72 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
 
   const loadMoreClicked = createEvent();
 
-  const fetchPageQuery = createQuery({
-    effect: createEffect((cursor?: string) => api.listing.findAll({ cursor, limit: PAGE_SIZE })),
-  });
-
-  const $listing = createStore<Listing[]>([]).on(fetchPageQuery.finished.done, (items, { result: { data } }) =>
-    items.concat(data.items),
-  );
-
-  const $nextCursor = createStore<string | null>(null).on(
-    fetchPageQuery.finished.done,
-    (_, { result: { data } }) => data.nextCursor,
-  );
+  const $listing = createStore<Listing[]>([]);
+  const $nextCursor = createStore<string | null>(null);
 
   const purge = merge([ListingCreateEdit.model.mutated, ListingDelete.model.mutated]);
 
-  sample({
-    clock: [authorizedRoute.opened, purge],
-    filter: authorizedRoute.$isOpened,
-    target: fetchPageQuery.start.prepend(() => undefined),
+  const fetchPageQuery = createQuery({
+    effect: createEffect(
+      ({ cursor, filters }: { cursor?: string | null; filters: StoreValue<typeof ListingFilters.model.$filters> }) =>
+        api.listing.findAll({
+          cursor: cursor || undefined,
+          limit: PAGE_SIZE,
+          search: filters.search || undefined,
+          categoryId: filters.categoryId || undefined,
+          status: filters.status || undefined,
+          minPrice: filters.minPrice ?? undefined,
+          maxPrice: filters.maxPrice ?? undefined,
+        }),
+    ),
+    concurrency: 'TAKE_LATEST',
+    cache: { staleAfter: 5000, purge },
   });
 
+  fRetry(fetchPageQuery, { times: 2, delay: 300 });
+
   sample({
-    clock: loadMoreClicked,
-    source: $nextCursor,
-    filter: (cursor): cursor is string => cursor !== null,
+    clock: [authorizedRoute.opened, purge],
+    source: { filters: ListingFilters.model.$filters },
+    filter: authorizedRoute.$isOpened,
     target: fetchPageQuery.start,
   });
 
   sample({
+    clock: loadMoreClicked,
+    source: { cursor: $nextCursor, filters: ListingFilters.model.$filters },
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: ListingFilters.model.filtersChanged,
+    source: { filters: ListingFilters.model.$filters },
+    fn: ({ filters }) => ({ cursor: undefined, filters }),
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: fetchPageQuery.finished.done,
+    source: $listing,
+    fn: (listing, res) => ({
+      listing: res.params.cursor ? [...listing, ...res.result.data.items] : res.result.data.items,
+      cursor: res.result.data.nextCursor,
+    }),
+    target: spread({
+      listing: $listing,
+      cursor: $nextCursor,
+    }),
+  });
+
+  sample({
     clock: purge,
-    target: [$nextCursor.reinit, $listing.reinit],
+    target: [$nextCursor.reinit],
   });
 
   sample({
     clock: authorizedRoute.closed,
-    target: [$nextCursor.reinit, $listing.reinit, ListingCreateEdit.model.reset],
+    target: [ListingCreateEdit.model.reset],
   });
-
-  fRetry(fetchPageQuery, { times: 2, delay: 300 });
-  concurrency(fetchPageQuery, { strategy: 'TAKE_LATEST' });
-  cache(fetchPageQuery, { staleAfter: 5000, purge });
 
   message({
     clock: fetchPageQuery.finished.fail.map(({ error }) => error),

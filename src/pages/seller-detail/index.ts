@@ -1,0 +1,1 @@
+export { SellerDetail } from './ui';

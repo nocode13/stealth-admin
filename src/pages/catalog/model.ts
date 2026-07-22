@@ -1,8 +1,10 @@
-import { createEffect, createEvent, createStore, merge, sample } from 'effector';
-import { cache, concurrency, createQuery } from 'effector-refetch';
+import { createEffect, createEvent, createStore, merge, sample, type StoreValue } from 'effector';
+import { createQuery } from 'effector-refetch';
+import { spread } from 'patronum';
 
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
 import { CatalogDelete } from '@/features/catalog/delete';
+import { CatalogFilters } from '@/features/catalog/filter';
 import type { CatalogItem } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
@@ -16,47 +18,70 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
 
   const loadMoreClicked = createEvent();
 
-  const fetchPageQuery = createQuery({
-    effect: createEffect((cursor?: string) => api.catalog.findAll({ cursor, limit: PAGE_SIZE })),
-  });
-
-  const $catalog = createStore<CatalogItem[]>([]).on(fetchPageQuery.finished.done, (items, { result: { data } }) =>
-    items.concat(data.items),
-  );
-
-  const $nextCursor = createStore<string | null>(null).on(
-    fetchPageQuery.finished.done,
-    (_, { result: { data } }) => data.nextCursor,
-  );
+  const $catalog = createStore<CatalogItem[]>([]);
+  const $nextCursor = createStore<string | null>(null);
 
   const purge = merge([CatalogCreateEdit.model.mutated, CatalogDelete.model.mutated]);
 
-  sample({
-    clock: [authorizedRoute.opened, purge],
-    filter: authorizedRoute.$isOpened,
-    target: fetchPageQuery.start.prepend(() => undefined),
+  const fetchPageQuery = createQuery({
+    effect: createEffect(
+      ({ cursor, filters }: { cursor?: string | null; filters: StoreValue<typeof CatalogFilters.model.$filters> }) =>
+        api.catalog.findAll({
+          cursor: cursor || undefined,
+          limit: PAGE_SIZE,
+          search: filters.search || undefined,
+          categoryId: filters.categoryId || undefined,
+          status: filters.status || undefined,
+        }),
+    ),
+    concurrency: 'TAKE_LATEST',
+    cache: { staleAfter: 5000, purge },
   });
 
+  fRetry(fetchPageQuery, { times: 2, delay: 300 });
+
   sample({
-    clock: loadMoreClicked,
-    source: $nextCursor,
-    filter: (cursor): cursor is string => cursor !== null,
+    clock: [authorizedRoute.opened, purge],
+    source: { filters: CatalogFilters.model.$filters },
+    filter: authorizedRoute.$isOpened,
     target: fetchPageQuery.start,
   });
 
   sample({
+    clock: loadMoreClicked,
+    source: { cursor: $nextCursor, filters: CatalogFilters.model.$filters },
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: CatalogFilters.model.filtersChanged,
+    source: { filters: CatalogFilters.model.$filters },
+    fn: ({ filters }) => ({ cursor: undefined, filters }),
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: fetchPageQuery.finished.done,
+    source: $catalog,
+    fn: (catalog, res) => ({
+      catalog: res.params.cursor ? [...catalog, ...res.result.data.items] : res.result.data.items,
+      cursor: res.result.data.nextCursor,
+    }),
+    target: spread({
+      catalog: $catalog,
+      cursor: $nextCursor,
+    }),
+  });
+
+  sample({
     clock: purge,
-    target: [$nextCursor.reinit, $catalog.reinit],
+    target: [$nextCursor.reinit],
   });
 
   sample({
     clock: authorizedRoute.closed,
-    target: [$nextCursor.reinit, $catalog.reinit, CatalogCreateEdit.model.reset],
+    target: [CatalogCreateEdit.model.reset],
   });
-
-  fRetry(fetchPageQuery, { times: 2, delay: 300 });
-  concurrency(fetchPageQuery, { strategy: 'TAKE_LATEST' });
-  cache(fetchPageQuery, { staleAfter: 5000, purge });
 
   message({
     clock: fetchPageQuery.finished.fail.map((res) => res.error),

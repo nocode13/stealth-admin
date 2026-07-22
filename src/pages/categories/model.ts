@@ -1,7 +1,9 @@
-import { createEffect, createEvent, createStore, merge, sample } from 'effector';
-import { cache, concurrency, createQuery } from 'effector-refetch';
+import { createEffect, createEvent, createStore, merge, sample, type StoreValue } from 'effector';
+import { createQuery } from 'effector-refetch';
+import { spread } from 'patronum';
 
 import { CategoryCreateEdit } from '@/features/category/creat-edit';
+import { CategoryFilters } from '@/features/category/filter';
 import type { Category } from '@/entities/category';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
@@ -15,46 +17,68 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
 
   const loadMoreClicked = createEvent();
 
-  const fetchPageQuery = createQuery({
-    effect: createEffect((cursor?: string) => api.category.findAll({ cursor, limit: PAGE_SIZE })),
-  });
-
-  const $categories = createStore<Category[]>([]).on(fetchPageQuery.finished.done, (items, { result: { data } }) =>
-    items.concat(data.items),
-  );
-
-  const $nextCursor = createStore<string | null>(null).on(
-    fetchPageQuery.finished.done,
-    (_, { result: { data } }) => data.nextCursor,
-  );
+  const $categories = createStore<Category[]>([]);
+  const $nextCursor = createStore<string | null>(null);
 
   const purge = merge([CategoryCreateEdit.model.mutated]);
 
+  const fetchPageQuery = createQuery({
+    effect: createEffect(
+      ({ cursor, filters }: { cursor?: string | null; filters: StoreValue<typeof CategoryFilters.model.$filters> }) =>
+        api.category.findAll({
+          cursor: cursor || undefined,
+          limit: PAGE_SIZE,
+          search: filters.search || undefined,
+          status: filters.status || undefined,
+        }),
+    ),
+    concurrency: 'TAKE_LATEST',
+    cache: { staleAfter: 5000, purge },
+  });
+
   fRetry(fetchPageQuery, { times: 2, delay: 300 });
-  concurrency(fetchPageQuery, { strategy: 'TAKE_LATEST' });
-  cache(fetchPageQuery, { staleAfter: 5000, purge });
 
   sample({
     clock: [authorizedRoute.opened, purge],
+    source: { filters: CategoryFilters.model.$filters },
     filter: authorizedRoute.$isOpened,
-    target: fetchPageQuery.start.prepend(() => undefined),
-  });
-
-  sample({
-    clock: loadMoreClicked,
-    source: $nextCursor,
-    filter: (cursor): cursor is string => cursor !== null,
     target: fetchPageQuery.start,
   });
 
   sample({
+    clock: loadMoreClicked,
+    source: { cursor: $nextCursor, filters: CategoryFilters.model.$filters },
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: CategoryFilters.model.filtersChanged,
+    source: { filters: CategoryFilters.model.$filters },
+    fn: ({ filters }) => ({ cursor: undefined, filters }),
+    target: fetchPageQuery.start,
+  });
+
+  sample({
+    clock: fetchPageQuery.finished.done,
+    source: $categories,
+    fn: (categories, res) => ({
+      categories: res.params.cursor ? [...categories, ...res.result.data.items] : res.result.data.items,
+      cursor: res.result.data.nextCursor,
+    }),
+    target: spread({
+      categories: $categories,
+      cursor: $nextCursor,
+    }),
+  });
+
+  sample({
     clock: purge,
-    target: [$nextCursor.reinit, $categories.reinit],
+    target: [$nextCursor.reinit],
   });
 
   sample({
     clock: authorizedRoute.closed,
-    target: [$nextCursor.reinit, $categories.reinit, CategoryCreateEdit.model.reset],
+    target: [CategoryCreateEdit.model.reset],
   });
 
   message({

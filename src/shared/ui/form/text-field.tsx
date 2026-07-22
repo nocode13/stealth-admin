@@ -12,6 +12,7 @@ export type TextFieldProps<T extends FieldValues> = FieldProps<T> & {
   prefix?: ReactNode;
   autoComplete?: string;
   size?: 'small' | 'middle' | 'large';
+  required?: boolean;
 };
 
 export const TextField = <T extends FieldValues>({
@@ -23,6 +24,7 @@ export const TextField = <T extends FieldValues>({
   prefix,
   autoComplete,
   size = 'large',
+  required,
 }: TextFieldProps<T>) => {
   const {
     field,
@@ -33,7 +35,12 @@ export const TextField = <T extends FieldValues>({
 
   return (
     <div style={{ marginBottom: 16 }}>
-      {!!label && <Typography.Text style={{ display: 'block', marginBottom: 6 }}>{label}</Typography.Text>}
+      {!!label && (
+        <Typography.Text style={{ display: 'block', marginBottom: 6 }}>
+          {label}
+          {!!required && <Typography.Text type="danger"> *</Typography.Text>}
+        </Typography.Text>
+      )}
       <InputComponent
         {...field}
         size={size}

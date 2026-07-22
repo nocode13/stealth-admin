@@ -5,29 +5,39 @@ import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
 import { useId } from 'react';
 
+import { catalogConfig } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
-import { SelectField, TextField } from '@/shared/ui/form';
+import { SelectField, TextAreaField, TextField } from '@/shared/ui/form';
 
 import * as model from '../model';
-
-const STATUS_OPTIONS = [
-  { value: 'PENDING', label: 'pending' },
-  { value: 'APPROVED', label: 'approved' },
-  { value: 'REJECTED', label: 'rejected' },
-];
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 export const CatalogItemModal = () => {
-  const [isOpen, editingItem, mutating, categoryOptions, uploadingImage, validated, closeRequested, role] = useUnit([
+  const [
+    isOpen,
+    editingItem,
+    mutating,
+    categoryOptions,
+    uploadingImage,
+    validated,
+    closeRequested,
+    role,
+    categoriesSearch,
+    categoriesFetching,
+    categoriesSearchChanged,
+  ] = useUnit([
     model.disclosure.$isOpen,
     model.$editingItem,
     model.$mutating,
-    model.$categoryOptions,
+    model.$categories,
     model.uploadImageFx.pending,
     model.validated,
     model.reset,
     userModel.$role,
+    model.$categoriesSearch,
+    model.$categoriesFetching,
+    model.categoriesSearchChanged,
   ]);
 
   const formId = useId();
@@ -37,6 +47,7 @@ export const CatalogItemModal = () => {
     defaultValues: model.DEFAULT_VALUES,
   });
   model.form.useBindFormWithModel({ form });
+  const statusOptions = catalogConfig.useStatusOptions();
 
   return (
     <Modal
@@ -48,18 +59,26 @@ export const CatalogItemModal = () => {
       destroyOnHidden
     >
       <form onSubmit={form.handleSubmit(() => validated())} id={formId}>
-        <TextField control={form.control} name="name" label="Название" />
-        <TextField control={form.control} name="slug" label="Слаг" />
+        <TextField control={form.control} name="name" label="Название" required />
+        <TextField control={form.control} name="slug" label="Слаг" required />
         <SelectField
           control={form.control}
           name="categoryId"
           label="Категория"
+          required
           options={categoryOptions.map((category) => ({ value: category.id, label: category.nameRu }))}
+          loading={categoriesFetching}
+          showSearch={{
+            searchValue: categoriesSearch,
+            onSearch: categoriesSearchChanged,
+            filterOption: false,
+            autoClearSearchValue: true,
+          }}
         />
         <TextField control={form.control} name="unit" label="Единица измерения" />
-        <TextField control={form.control} name="description" label="Описание" />
+        <TextAreaField control={form.control} name="description" label="Описание" />
         {!!editingItem && role === 'SUPER_ADMIN' && (
-          <SelectField control={form.control} name="status" label="Статус" options={STATUS_OPTIONS} />
+          <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
         )}
       </form>
       {editingItem ? (

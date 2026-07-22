@@ -5,10 +5,10 @@ import { useUnit } from 'effector-react';
 
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
-import { STATUS_LABELS, type Listing } from '@/entities/listing';
+import { ListingFilters } from '@/features/listing/filter';
+import { StatusTag, type Listing } from '@/entities/listing';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate, formatPrice } from '@/shared/lib/format';
-import { StatusTag } from '@/shared/ui/status-tag';
 import { withTitle } from '@/shared/ui/with-title';
 
 import { factory } from '../model';
@@ -21,11 +21,16 @@ const Page = ({ model }: LazyPageProps<Model>) => {
 
   return (
     <Flex vertical gap="middle" style={{ width: '100%' }}>
-      <Flex justify="flex-end">
-        <Button type="primary" onClick={() => ListingCreateEdit.model.createTriggered()} icon={<PlusOutlined />}>
+      <ListingFilters.View>
+        <Button
+          type="primary"
+          onClick={() => ListingCreateEdit.model.createTriggered()}
+          icon={<PlusOutlined />}
+          style={{ width: '100%' }}
+        >
           Создать
         </Button>
-      </Flex>
+      </ListingFilters.View>
       <Table
         rowKey="id"
         dataSource={listing}
@@ -70,7 +75,7 @@ const useColumns = (): TableProps<Listing>['columns'] => {
     {
       title: 'Статус',
       key: 'status',
-      render: (_, item) => <StatusTag status={item.status} labels={STATUS_LABELS} />,
+      render: (_, item) => <StatusTag status={item.status} />,
     },
     {
       title: 'Создано',

@@ -5,6 +5,7 @@ import { useUnit } from 'effector-react';
 
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
 import { CatalogDelete } from '@/features/catalog/delete';
+import { CatalogFilters } from '@/features/catalog/filter';
 import { StatusTag, type CatalogItem } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
@@ -21,11 +22,16 @@ const Page = ({ model }: LazyPageProps<Model>) => {
 
   return (
     <Flex vertical gap="middle" style={{ width: '100%' }}>
-      <Flex justify="flex-end">
-        <Button type="primary" onClick={() => CatalogCreateEdit.model.createTriggered()} icon={<PlusOutlined />}>
+      <CatalogFilters.View>
+        <Button
+          type="primary"
+          onClick={() => CatalogCreateEdit.model.createTriggered()}
+          icon={<PlusOutlined />}
+          style={{ width: '100%' }}
+        >
           Создать
         </Button>
-      </Flex>
+      </CatalogFilters.View>
       <Table
         rowKey="id"
         dataSource={catalog}
