@@ -203,14 +203,21 @@ Segmented-фильтр по статусу, см. ниже). Эталон — `c
 - `GET  /admin/auth/me` → `User` (200) / 401.
 - `POST /admin/auth/logout` → `{ success: true }`.
 - `POST /admin/auth/telegram/link` → `{ nonce, botUrl, expiresIn }` — ссылка на бота.
+- `POST /admin/auth/telegram/unlink` → `User` (с `telegramId: null`) — отвязка, без похода в бота.
 
 `User = { id, phone, email, role, sellerId, telegramId }`,
 `role ∈ 'SUPER_ADMIN' | 'SELLER' | 'CUSTOMER'` (роль используется строкой по месту).
 
-**Привязка Telegram** (`features/auth/link-telegram`, кнопка в сайдбаре). Продавец входит сюда
-по паролю, поэтому бот не знает, кому слать заказы. Кнопка выдаёт ссылку/QR на
+**Привязка/отвязка Telegram** (`features/auth/link-telegram`, кнопка в сайдбаре). Продавец входит
+сюда по паролю, поэтому бот не знает, кому слать заказы. Кнопка выдаёт ссылку/QR на
 `t.me/<bot>?start=sel_<nonce>`; после Start заказы приходят продавцу в чат, и статусы он может
-менять прямо там.
+менять прямо там. Отвязка — обратное действие в той же фиче (`unlinkTriggered`/`$unlinking`,
+кнопка через antd `Popconfirm` рядом со статусом «Telegram привязан», без модалки — паттерн как
+у `features/{catalog,listing}/delete`, т.к. действие мгновенно обратимо повторной привязкой).
+Эндпоинт `POST /admin/auth/telegram/unlink` на бэке просто обнуляет `telegramId`
+(`TelegramLinkService.unlinkSeller`) и возвращает свежего `User`, которым фича патчит
+`$user` через `entities/user.updated` (точечный `Partial<User>`-патч стора, без повторного
+`GET /me`) — не бот-флоу, отвязка только через админку, без бот-команды.
 
 **Один Telegram = одна роль.** Аккаунт, который уже вошёл в мобилку покупателем, привязать
 к магазину нельзя — и наоборот, под привязанным к магазину Telegram нельзя войти в мобилку.
@@ -222,7 +229,10 @@ Segmented-фильтр по статусу, см. ниже). Эталон — `c
 ## Команды
 
 - `pnpm dev` — дев-сервер на **5173** (этот origin уже в CORS бэкенда).
-- `pnpm build` — `tsc -b && vite build`.
+- `pnpm build` — `tsc -b && vite build`. `vite.config.ts` задаёт `build.rollupOptions.output.manualChunks`
+  — `antd`/`@ant-design/icons` вынесены в отдельный чанк `antd-*.js` (~1.1 MB до gzip), чтобы не раздувать
+  основной бандл и кэшировать antd отдельно от остального кода; функция-предикат, а не объектная форма
+  `manualChunks`, т.к. типы Rolldown (`build.rollupOptions.output`) не принимают объектную сигнатуру.
 - `pnpm lint:ts` — `tsc --noEmit`; `pnpm lint:eslint` — eslint; `pnpm lint:all` — оба параллельно.
 
 Тестовые логины (сид бэкенда, пароль у всех `password123`):

@@ -13,4 +13,6 @@ export const auth = {
    * После привязки заказы падают продавцу в чат, и статусы он меняет прямо там.
    */
   linkTelegram: () => base.post<BotLinkSession>('/auth/telegram/link').then((r) => r.data),
+  /** POST /admin/auth/telegram/unlink — отвязывает Telegram от аккаунта. */
+  unlinkTelegram: () => base.post<User>('/auth/telegram/unlink').then((r) => r.data),
 };

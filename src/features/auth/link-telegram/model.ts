@@ -33,3 +33,15 @@ sample({ clock: closed, target: disclosure.closed });
 
 // 409 «Telegram занят другим аккаунтом» приходит с бэка — показываем как есть.
 message({ clock: createLinkFx.failData, errorHandle: true });
+
+export const unlinkTriggered = createEvent();
+
+const unlinkFx = createEffect(() => api.auth.unlinkTelegram());
+
+export const $unlinking = unlinkFx.pending;
+
+sample({ clock: unlinkTriggered, target: unlinkFx });
+sample({ clock: unlinkFx.doneData, target: userModel.updated });
+
+message({ clock: unlinkFx.doneData, type: 'success', content: 'Telegram отвязан' });
+message({ clock: unlinkFx.fail.map(({ error }) => error), errorHandle: true });

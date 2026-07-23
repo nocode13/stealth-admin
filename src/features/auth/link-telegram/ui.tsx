@@ -1,11 +1,17 @@
-import { CheckCircleOutlined, SendOutlined } from '@ant-design/icons';
-import { Button, Flex, Modal, QRCode, Spin, Typography } from 'antd';
+import { CheckCircleOutlined, DisconnectOutlined, SendOutlined } from '@ant-design/icons';
+import { Button, Flex, Modal, Popconfirm, QRCode, Spin, Typography } from 'antd';
 import { useUnit } from 'effector-react';
 
 import * as model from './model';
 
 export const LinkTelegramButton = ({ collapsed }: { collapsed?: boolean }) => {
-  const [isLinked, pending, trigger] = useUnit([model.$isLinked, model.$pending, model.triggered]);
+  const [isLinked, pending, trigger, unlinking, unlinkTrigger] = useUnit([
+    model.$isLinked,
+    model.$pending,
+    model.triggered,
+    model.$unlinking,
+    model.unlinkTriggered,
+  ]);
 
   if (isLinked) {
     return (
@@ -16,6 +22,15 @@ export const LinkTelegramButton = ({ collapsed }: { collapsed?: boolean }) => {
             Telegram привязан
           </Typography.Text>
         )}
+        <Popconfirm
+          title="Отвязать Telegram?"
+          description="Заказы перестанут приходить в бота. Привязать можно заново в любой момент."
+          onConfirm={() => unlinkTrigger()}
+          okText="Отвязать"
+          cancelText="Отмена"
+        >
+          <Button type="text" size="small" danger icon={<DisconnectOutlined />} loading={unlinking} />
+        </Popconfirm>
       </Flex>
     );
   }

@@ -19,6 +19,7 @@ export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus];
 
 export const loggedIn = createEvent<User>();
 export const loggedOut = createEvent();
+export const updated = createEvent<Partial<User>>();
 
 export const $session = createStore<SessionStatus>(SessionStatus.Initial);
 
@@ -43,6 +44,7 @@ export const notAuthorized = sessionFx.failData;
 $user
   .on(sessionFx.doneData, (_, user) => user)
   .on(loggedIn, (_, user) => user)
+  .on(updated, (user, patch) => (user ? { ...user, ...patch } : user))
   .reset(loggedOut);
 
 $session.on(loggedIn, () => SessionStatus.Authorized).reset(loggedOut);
