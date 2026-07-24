@@ -12,6 +12,7 @@ import type { LazyPageFactoryParams } from '@/shared/lib/create-lazy-page';
 import { message } from '@/shared/lib/message';
 import { PAGE_SIZE } from '@/shared/config/pagination';
 import { fRetry } from '@/shared/lib/f-retry';
+import { toTiyin } from '@/shared/lib/currency/currency';
 
 export const factory = ({ route }: LazyPageFactoryParams) => {
   const authorizedRoute = userModel.chainAuthorized({ route, roles: ['SELLER'] });
@@ -32,8 +33,8 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
           search: filters.search || undefined,
           categoryId: filters.categoryId || undefined,
           status: filters.status || undefined,
-          minPrice: filters.minPrice ?? undefined,
-          maxPrice: filters.maxPrice ?? undefined,
+          minPrice: filters.minPrice != null ? toTiyin(filters.minPrice) : undefined,
+          maxPrice: filters.maxPrice != null ? toTiyin(filters.maxPrice) : undefined,
         }),
     ),
     concurrency: 'TAKE_LATEST',

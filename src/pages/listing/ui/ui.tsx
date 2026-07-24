@@ -66,7 +66,7 @@ const useColumns = (): TableProps<Listing>['columns'] => {
     {
       title: 'Цена',
       key: 'price',
-      render: (_, item) => formatPrice(item.price, item.currency),
+      render: (_, item) => formatPrice(item.price),
     },
     {
       title: 'Остаток',

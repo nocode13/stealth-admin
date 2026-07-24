@@ -101,8 +101,8 @@ export type Listing = {
   sellerId: string;
   catalogItemId: string;
   catalogItem: CatalogItem;
+  /** В тиинах (1 сум = 100 тиинов). */
   price: string;
-  currency: string;
   stock: number;
   status: ListingStatus;
   createdAt: string;
@@ -111,8 +111,8 @@ export type Listing = {
 
 export interface ListingPayload {
   catalogItemId: string;
+  /** В тиинах (1 сум = 100 тиинов). */
   price: number;
-  currency?: string;
   stock: number;
   status?: ListingStatus;
 }
@@ -121,7 +121,9 @@ export interface FindListingsParams extends CursorPageParams {
   search?: string;
   categoryId?: string;
   status?: ListingStatus;
+  /** В тиинах. */
   minPrice?: number;
+  /** В тиинах. */
   maxPrice?: number;
   /** Только для SUPER_ADMIN — SELLER всегда скоупится своим продавцом. */
   sellerId?: string;
@@ -205,7 +207,6 @@ export interface Order {
   itemsTotal: string;
   deliveryFee: string;
   total: string;
-  currency: string;
   contactName: string;
   contactPhone: string;
   deliveryAddress: string;

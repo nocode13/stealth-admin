@@ -1,3 +1,5 @@
+import { formatAmount } from './currency/currency';
+
 export const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('ru-RU', {
     day: '2-digit',
@@ -5,4 +7,4 @@ export const formatDate = (iso: string) =>
     year: 'numeric',
   });
 
-export const formatPrice = (price: string, currency: string) => `${Number(price).toLocaleString('ru-RU')} ${currency}`;
+export const formatPrice = (price: string) => formatAmount(Number(price));

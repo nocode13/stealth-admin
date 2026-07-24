@@ -8,11 +8,11 @@ import { api } from '@/shared/api';
 import { createDisclosure } from '@/shared/lib/disclosure';
 import { createForm } from '@/shared/lib/form';
 import { message } from '@/shared/lib/message';
+import { toSum, toTiyin } from '@/shared/lib/currency/currency';
 
 export const schema = z.object({
   catalogItemId: z.string().min(1, 'Выберите товар'),
   price: z.coerce.number().min(0, 'Цена не может быть отрицательной'),
-  currency: z.string().optional(),
   stock: z.coerce.number().int().min(0, 'Остаток не может быть отрицательным'),
   status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
 });
@@ -22,7 +22,6 @@ export type FormValues = z.infer<typeof schema>;
 export const DEFAULT_VALUES: FormValues = {
   catalogItemId: '',
   price: 0,
-  currency: 'UZS',
   stock: 0,
   status: 'DRAFT',
 };
@@ -63,8 +62,7 @@ sample({
   clock: editTriggered,
   fn: (listing): FormValues => ({
     catalogItemId: listing.catalogItemId,
-    price: Number(listing.price),
-    currency: listing.currency,
+    price: toSum(Number(listing.price)),
     stock: listing.stock,
     status: listing.status,
   }),
@@ -78,8 +76,7 @@ export const createFx = attach({
       catalogItemId: values.catalogItemId,
       // `$formValues` — сырой снапшот из form.watch(), zod-коэрсия (z.coerce.number())
       // применяется только валидатором и до эффекта не доходит — приводим типы вручную.
-      price: Number(values.price),
-      currency: values.currency || undefined,
+      price: toTiyin(Number(values.price)),
       stock: Math.trunc(Number(values.stock)),
       status: values.status,
     }),
@@ -91,8 +88,7 @@ export const updateFx = attach({
     if (!editing) throw new Error('No listing');
     return api.listing.update(editing.id, {
       catalogItemId: values.catalogItemId,
-      price: Number(values.price),
-      currency: values.currency || undefined,
+      price: toTiyin(Number(values.price)),
       stock: Math.trunc(Number(values.stock)),
       status: values.status,
     });

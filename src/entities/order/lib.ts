@@ -1,4 +1,5 @@
 import type { OrderStatus } from '@/shared/api';
+import { formatAmount } from '@/shared/lib/currency/currency';
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   NEW: 'Новый',
@@ -40,7 +41,7 @@ export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   CANCELLED: [],
 };
 
-export const formatMoney = (value: string) => Number(value).toLocaleString('ru-RU');
+export const formatMoney = (value: string) => formatAmount(Number(value));
 
 /**
  * Ссылка на МАРШРУТ (а не на точку) в Яндекс.Картах: курьер жмёт и сразу едет.

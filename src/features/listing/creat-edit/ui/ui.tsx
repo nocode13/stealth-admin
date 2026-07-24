@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useId } from 'react';
 
 import { listingConfig } from '@/entities/listing';
-import { NumberField, SelectField, TextField } from '@/shared/ui/form';
+import { NumberField, SelectField } from '@/shared/ui/form';
 
 import * as model from '../model';
 
@@ -45,8 +45,7 @@ export const ListingModal = () => {
           required
           options={catalogItemOptions.map((item) => ({ value: item.id, label: item.name }))}
         />
-        <NumberField control={form.control} name="price" label="Цена" min={0} step={0.01} required />
-        <TextField control={form.control} name="currency" label="Валюта" />
+        <NumberField control={form.control} name="price" label="Цена, сум" min={0} step={0.01} required />
         <NumberField control={form.control} name="stock" label="Остаток" min={0} step={1} required />
         <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
       </form>

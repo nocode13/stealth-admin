@@ -80,7 +80,7 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         <Table rowKey="id" dataSource={order.items} columns={ITEM_COLUMNS} pagination={false} size="small" />
         <Flex justify="flex-end" style={{ marginTop: 12 }}>
           <Typography.Text strong>
-            Итого: {formatMoney(order.total)} {order.currency} · наличными курьеру
+            Итого: {formatMoney(order.total)} · наличными курьеру
           </Typography.Text>
         </Flex>
       </Card>

@@ -110,7 +110,7 @@ const useColumns = (): TableProps<Order>['columns'] => {
     {
       title: 'Сумма',
       key: 'total',
-      render: (_, order) => `${formatMoney(order.total)} ${order.currency}`,
+      render: (_, order) => formatMoney(order.total),
     },
     {
       title: 'Создан',

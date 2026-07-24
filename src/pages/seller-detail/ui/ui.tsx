@@ -158,7 +158,7 @@ const useColumns = (): TableProps<Order>['columns'] => {
     {
       title: 'Сумма',
       key: 'total',
-      render: (_, order) => `${formatMoney(order.total)} ${order.currency}`,
+      render: (_, order) => formatMoney(order.total),
     },
     {
       title: 'Создан',
@@ -216,7 +216,7 @@ const useListingColumns = (): TableProps<Listing>['columns'] => {
     {
       title: 'Цена',
       key: 'price',
-      render: (_, listing) => `${formatMoney(listing.price)} ${listing.currency}`,
+      render: (_, listing) => formatMoney(listing.price),
     },
     { title: 'Остаток', dataIndex: 'stock' },
     {
