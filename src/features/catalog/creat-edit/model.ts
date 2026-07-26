@@ -93,6 +93,12 @@ export const uploadImageFx = attach({
 
 export const $mutating = or(createFx.pending, updateFx.pending, uploadImageFx.pending);
 export const mutated = merge([createFx.done, updateFx.done, uploadImageFx.done]);
+/**
+ * Закрывает модалку только сохранение самой позиции: после загрузки изображения модалка
+ * остаётся открытой, чтобы был виден результат кропа. `mutated` при этом продолжает
+ * инвалидировать список страницы — иначе таблица не подтянет новый `imageUrl`.
+ */
+const saved = merge([createFx.done, updateFx.done]);
 export const $categoriesFetching = fetchCategoriesQuery.$pending;
 
 $mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
@@ -142,7 +148,7 @@ split({
 });
 
 sample({
-  clock: [reset, mutated],
+  clock: [reset, saved],
   target: disclosure.closed,
 });
 

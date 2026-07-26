@@ -1,17 +1,17 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { Image, Modal, Typography, Upload } from 'antd';
-import { message as antMessage } from 'antd';
+import { Modal, Typography } from 'antd';
 import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
 import { useId } from 'react';
 
 import { catalogConfig } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
+import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
 import { SelectField, TextAreaField, TextField } from '@/shared/ui/form';
+import { ImageCropUpload } from '@/shared/ui/image-crop-upload';
+import { CatalogPreview } from '@/shared/ui/marketplace-preview';
 
 import * as model from '../model';
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 export const CatalogItemModal = () => {
   const [
@@ -82,32 +82,23 @@ export const CatalogItemModal = () => {
         )}
       </form>
       {editingItem ? (
-        <div style={{ marginTop: 16 }}>
-          <Typography.Text style={{ display: 'block', marginBottom: 6 }}>Изображение</Typography.Text>
-          {!!editingItem.imageUrl && <Image src={editingItem.imageUrl} alt={editingItem.name} width={80} />}
-          <div style={{ marginTop: 8 }}>
-            <Upload
-              accept="image/*"
-              showUploadList={false}
-              beforeUpload={(file) => {
-                if (!file.type.startsWith('image/')) {
-                  void antMessage.error('Файл должен быть изображением');
-                  return Upload.LIST_IGNORE;
-                }
-                if (file.size > MAX_IMAGE_SIZE) {
-                  void antMessage.error('Максимальный размер файла — 5 МБ');
-                  return Upload.LIST_IGNORE;
-                }
-                model.uploadImageFx(file);
-                return false;
-              }}
-            >
-              <Typography.Link disabled={uploadingImage}>
-                {uploadingImage ? 'Загрузка...' : 'Загрузить изображение'}
-              </Typography.Link>
-            </Upload>
-          </div>
-        </div>
+        <ImageCropUpload
+          aspect={PREVIEW_ASPECT.catalog}
+          currentUrl={editingItem.imageUrl}
+          uploading={uploadingImage}
+          label="Изображение"
+          triggerText="Загрузить изображение"
+          onConfirm={(file) => model.uploadImageFx(file)}
+          renderPreview={({ src, natural, area }) => (
+            <CatalogPreview
+              src={src}
+              natural={natural}
+              area={area}
+              name={form.watch('name') || editingItem.name}
+              category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.nameRu}
+            />
+          )}
+        />
       ) : (
         <Typography.Text type="secondary">Сохраните позицию, чтобы загрузить изображение.</Typography.Text>
       )}

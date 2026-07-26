@@ -26,6 +26,7 @@
     "patronum": "^2.3.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-easy-crop": "^6.2.3",
     "react-hook-form": "^7.81.0",
     "zod": "^4.4.3"
   },

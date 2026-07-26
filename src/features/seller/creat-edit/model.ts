@@ -98,6 +98,11 @@ export const uploadBannerFx = attach({
 
 export const $mutating = or(createFx.pending, updateFx.pending, uploadBannerFx.pending);
 export const mutated = merge([createFx.done, updateFx.done, uploadBannerFx.done]);
+/**
+ * Закрывает модалку только сохранение продавца: после загрузки баннера модалка остаётся
+ * открытой, чтобы был виден результат кропа. `mutated` продолжает инвалидировать список.
+ */
+const saved = merge([createFx.done, updateFx.done]);
 
 sample({
   clock: [editTriggered, uploadBannerFx.doneData],
@@ -113,7 +118,7 @@ split({
   },
 });
 
-sample({ clock: [reset, mutated], target: disclosure.closed });
+sample({ clock: [reset, saved], target: disclosure.closed });
 
 sample({
   clock: delay(disclosure.closed, 100),

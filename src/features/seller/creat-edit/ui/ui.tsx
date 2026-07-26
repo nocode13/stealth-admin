@@ -1,17 +1,17 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { Image, Modal, Typography, Upload } from 'antd';
-import { message as antMessage } from 'antd';
+import { Modal, Typography } from 'antd';
 import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
 import { useId } from 'react';
 
 import { sellerConfig } from '@/entities/seller';
 import { userModel } from '@/entities/user';
+import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
 import { SelectField, TextAreaField, TextField } from '@/shared/ui/form';
+import { ImageCropUpload } from '@/shared/ui/image-crop-upload';
+import { SellerBannerPreview } from '@/shared/ui/marketplace-preview';
 
 import * as model from '../model';
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 export const SellerModal = () => {
   const [isOpen, editingSeller, mutating, uploadingBanner, role] = useUnit([
@@ -55,32 +55,23 @@ export const SellerModal = () => {
         )}
       </form>
       {editingSeller ? (
-        <div style={{ marginTop: 16 }}>
-          <Typography.Text style={{ display: 'block', marginBottom: 6 }}>Баннер</Typography.Text>
-          {!!editingSeller.bannerUrl && <Image src={editingSeller.bannerUrl} alt={editingSeller.name} width={160} />}
-          <div style={{ marginTop: 8 }}>
-            <Upload
-              accept="image/*"
-              showUploadList={false}
-              beforeUpload={(file) => {
-                if (!file.type.startsWith('image/')) {
-                  void antMessage.error('Файл должен быть изображением');
-                  return Upload.LIST_IGNORE;
-                }
-                if (file.size > MAX_IMAGE_SIZE) {
-                  void antMessage.error('Максимальный размер файла — 5 МБ');
-                  return Upload.LIST_IGNORE;
-                }
-                model.uploadBannerFx(file);
-                return false;
-              }}
-            >
-              <Typography.Link disabled={uploadingBanner}>
-                {uploadingBanner ? 'Загрузка...' : 'Загрузить баннер'}
-              </Typography.Link>
-            </Upload>
-          </div>
-        </div>
+        <ImageCropUpload
+          aspect={PREVIEW_ASPECT.sellerBanner}
+          currentUrl={editingSeller.bannerUrl}
+          uploading={uploadingBanner}
+          label="Баннер"
+          triggerText="Загрузить баннер"
+          onConfirm={(file) => model.uploadBannerFx(file)}
+          renderPreview={({ src, natural, area }) => (
+            <SellerBannerPreview
+              src={src}
+              natural={natural}
+              area={area}
+              name={form.watch('name') || editingSeller.name}
+              description={form.watch('description') || editingSeller.description || undefined}
+            />
+          )}
+        />
       ) : (
         <Typography.Text type="secondary">Сохраните продавца, чтобы загрузить баннер.</Typography.Text>
       )}
