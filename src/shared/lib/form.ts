@@ -45,7 +45,7 @@ export const createForm = <FormShape extends FieldValues, TransformedValues exte
   });
 
   $formInstance.on(formInstanceChanged, (_, form) => form).reset(resetFormInstance);
-  $formValues.on(formValuesChanged, (_, values) => values);
+  $formValues.on(formValuesChanged, (_, values) => values).on(resetFx, (_, values) => values);
   $resetFailed.on(resetFx.fail, (_, { params: formShape }) => formShape).reset(resetFx.done);
 
   sample({

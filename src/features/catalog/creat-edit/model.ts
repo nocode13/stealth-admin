@@ -64,7 +64,6 @@ export const createFx = attach({
       categoryId: values.categoryId || undefined,
       description: values.description || undefined,
       unit: values.unit || undefined,
-      status: values.status,
     }),
 });
 

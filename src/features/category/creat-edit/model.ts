@@ -45,7 +45,13 @@ sample({ clock: editTriggered, target: $editingCategory });
 
 export const createFx = attach({
   source: form.$formValues,
-  effect: (values: FormValues) => api.category.create(values),
+  effect: (values: FormValues) =>
+    api.category.create({
+      nameRu: values.nameRu,
+      nameUz: values.nameUz || undefined,
+      nameEn: values.nameEn || undefined,
+      nameKaa: values.nameKaa || undefined,
+    }),
 });
 
 export const updateFx = attach({
