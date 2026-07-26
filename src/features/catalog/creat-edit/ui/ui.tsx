@@ -60,7 +60,6 @@ export const CatalogItemModal = () => {
     >
       <form onSubmit={form.handleSubmit(() => validated())} id={formId}>
         <TextField control={form.control} name="name" label="Название" required />
-        <TextField control={form.control} name="slug" label="Слаг" required />
         <SelectField
           control={form.control}
           name="categoryId"

@@ -13,7 +13,6 @@ import { message } from '@/shared/lib/message';
 
 export const schema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
-  slug: z.string().min(2, 'Минимум 2 символа'),
   categoryId: z.string().optional(),
   description: z.string().optional(),
   unit: z.string().optional(),
@@ -24,7 +23,6 @@ export type FormValues = z.infer<typeof schema>;
 
 export const DEFAULT_VALUES: FormValues = {
   name: '',
-  slug: '',
   categoryId: '',
   description: '',
   unit: '',
@@ -60,7 +58,6 @@ export const createFx = attach({
   effect: (values: FormValues) =>
     api.catalog.create({
       name: values.name,
-      slug: values.slug,
       categoryId: values.categoryId || undefined,
       description: values.description || undefined,
       unit: values.unit || undefined,
@@ -73,7 +70,6 @@ export const updateFx = attach({
     if (!editing) throw new Error('No catalog item');
     return api.catalog.update(editing.id, {
       name: values.name,
-      slug: values.slug,
       // Именно null, а не undefined: undefined в PATCH означает «не менять»,
       // и очистка селекта не доехала бы до бэкенда.
       categoryId: values.categoryId || null,
@@ -130,7 +126,6 @@ sample({
   clock: editTriggered,
   fn: (item): FormValues => ({
     name: item.name,
-    slug: item.slug,
     categoryId: item.categoryId ?? '',
     description: item.description ?? '',
     unit: item.unit ?? '',

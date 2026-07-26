@@ -67,7 +67,6 @@ export interface FindCategoriesParams extends CursorPageParams {
 export type CatalogItem = {
   id: string;
   name: string;
-  slug: string;
   categoryId: string | null;
   category: Category | null;
   description: string | null;
@@ -81,7 +80,6 @@ export type CatalogItem = {
 
 export interface CatalogItemPayload {
   name: string;
-  slug: string;
   /** `null` в PATCH снимает категорию; `undefined` — не менять. */
   categoryId?: string | null;
   description?: string;
