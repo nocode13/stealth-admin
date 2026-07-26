@@ -2,6 +2,7 @@ import { Col, Input, InputNumber, Row, Select, theme } from 'antd';
 import { useUnit } from 'effector-react';
 
 import { listingConfig } from '@/entities/listing';
+import { userModel } from '@/entities/user';
 
 import * as model from '../model';
 
@@ -18,6 +19,10 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
     minPriceChanged,
     maxPrice,
     maxPriceChanged,
+    sellerId,
+    sellerChanged,
+    sellers,
+    role,
   ] = useUnit([
     model.searchModel.$value,
     model.searchModel.changed,
@@ -30,15 +35,21 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
     model.minPriceModel.changed,
     model.maxPriceModel.$value,
     model.maxPriceModel.changed,
+    model.sellerModel.$value,
+    model.sellerModel.changed,
+    model.$sellers,
+    userModel.$role,
   ]);
   const { token } = theme.useToken();
 
+  const isSuperAdmin = role === 'SUPER_ADMIN';
   const statusOptions = listingConfig.useStatusOptions();
   const categoryOptions = categories.map((category) => ({ label: category.nameRu, value: category.id }));
+  const sellerOptions = sellers.map((seller) => ({ label: seller.name, value: seller.id }));
 
   return (
     <Row gutter={[token.margin, token.margin]} style={{ width: '100%' }}>
-      <Col span={6}>
+      <Col span={isSuperAdmin ? 4 : 6}>
         <Input
           value={search}
           onChange={(event) => searchChanged(event.target.value)}
@@ -46,7 +57,7 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
           placeholder="Название"
         />
       </Col>
-      <Col span={6}>
+      <Col span={isSuperAdmin ? 4 : 6}>
         <Select
           value={categoryId}
           options={categoryOptions}
@@ -56,7 +67,21 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
           placeholder="Категория"
         />
       </Col>
-      <Col span={5}>
+      {isSuperAdmin && (
+        <Col span={5}>
+          <Select
+            value={sellerId}
+            options={sellerOptions}
+            onChange={(value) => sellerChanged(value ?? null)}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            style={{ width: '100%' }}
+            placeholder="Продавец"
+          />
+        </Col>
+      )}
+      <Col span={isSuperAdmin ? 4 : 5}>
         <Select
           value={status}
           options={statusOptions}

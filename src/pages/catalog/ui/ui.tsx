@@ -6,6 +6,7 @@ import { useUnit } from 'effector-react';
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
 import { CatalogDelete } from '@/features/catalog/delete';
 import { CatalogFilters } from '@/features/catalog/filter';
+import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { StatusTag, type CatalogItem } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
@@ -48,6 +49,7 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         </Flex>
       )}
       <CatalogCreateEdit.View />
+      <ListingCreateEdit.View />
     </Flex>
   );
 };

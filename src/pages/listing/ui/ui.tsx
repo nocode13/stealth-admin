@@ -7,6 +7,7 @@ import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
 import { ListingFilters } from '@/features/listing/filter';
 import { StatusTag, type Listing } from '@/entities/listing';
+import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate, formatPrice } from '@/shared/lib/format';
 import { withTitle } from '@/shared/ui/with-title';
@@ -52,12 +53,23 @@ const Page = ({ model }: LazyPageProps<Model>) => {
 };
 
 const useColumns = (): TableProps<Listing>['columns'] => {
+  const [role] = useUnit([userModel.$role]);
+
   return [
     {
       title: 'Товар',
       key: 'product',
       render: (_, item) => item.catalogItem.name,
     },
+    ...(role === 'SUPER_ADMIN'
+      ? [
+          {
+            title: 'Продавец',
+            key: 'seller',
+            render: (_: unknown, item: Listing) => item.seller?.name ?? '—',
+          },
+        ]
+      : []),
     {
       title: 'Категория',
       key: 'category',

@@ -15,7 +15,9 @@ import { fRetry } from '@/shared/lib/f-retry';
 import { toTiyin } from '@/shared/lib/currency/currency';
 
 export const factory = ({ route }: LazyPageFactoryParams) => {
-  const authorizedRoute = userModel.chainAuthorized({ route, roles: ['SELLER'] });
+  // SUPER_ADMIN видит листинги всех продавцов (и может завести листинг за продавца),
+  // SELLER — только свои: скоуп проставляет бэкенд по сессии.
+  const authorizedRoute = userModel.chainAuthorized({ route, roles: ['SELLER', 'SUPER_ADMIN'] });
 
   const loadMoreClicked = createEvent();
 
@@ -32,6 +34,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
           limit: PAGE_SIZE,
           search: filters.search || undefined,
           categoryId: filters.categoryId || undefined,
+          sellerId: filters.sellerId || undefined,
           status: filters.status || undefined,
           minPrice: filters.minPrice != null ? toTiyin(filters.minPrice) : undefined,
           maxPrice: filters.maxPrice != null ? toTiyin(filters.maxPrice) : undefined,

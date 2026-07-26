@@ -96,6 +96,8 @@ export const mutated = merge([createFx.done, updateFx.done, uploadImageFx.done])
  * инвалидировать список страницы — иначе таблица не подтянет новый `imageUrl`.
  */
 const saved = merge([createFx.done, updateFx.done]);
+/** Только что созданная позиция — из неё страница каталога заводит продажную позицию. */
+export const created = createFx.doneData;
 export const $categoriesFetching = fetchCategoriesQuery.$pending;
 
 $mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');

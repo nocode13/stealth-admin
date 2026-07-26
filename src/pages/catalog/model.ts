@@ -5,6 +5,7 @@ import { spread } from 'patronum';
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
 import { CatalogDelete } from '@/features/catalog/delete';
 import { CatalogFilters } from '@/features/catalog/filter';
+import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import type { CatalogItem } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
@@ -80,9 +81,19 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
     target: [$nextCursor.reinit],
   });
 
+  // Сразу после создания позиции каталога админ заводит по ней продажную позицию:
+  // фича листинга открывается с предвыбранным товаром и селектом продавца. У продавца
+  // цепочки нет — его позиция уходит в PENDING, и бэкенд листинг по ней не даст создать.
+  // Склейка двух фич живёт на уровне страницы: features друг друга импортировать не могут.
+  sample({
+    clock: CatalogCreateEdit.model.created,
+    filter: userModel.$role.map((role) => role === 'SUPER_ADMIN'),
+    target: ListingCreateEdit.model.createForCatalogItemTriggered,
+  });
+
   sample({
     clock: authorizedRoute.closed,
-    target: [CatalogCreateEdit.model.reset],
+    target: [CatalogCreateEdit.model.reset, ListingCreateEdit.model.reset],
   });
 
   message({

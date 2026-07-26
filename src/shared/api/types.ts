@@ -100,6 +100,7 @@ export interface FindCatalogParams extends CursorPageParams {
 export type Listing = {
   id: string;
   sellerId: string;
+  seller?: Pick<Seller, 'id' | 'name'>;
   catalogItemId: string;
   catalogItem: CatalogItem;
   /** В тиинах (1 сум = 100 тиинов). */
@@ -116,6 +117,8 @@ export interface ListingPayload {
   price: number;
   stock: number;
   status?: ListingStatus;
+  /** Только для SUPER_ADMIN (он не привязан к продавцу) и только при создании. */
+  sellerId?: string;
 }
 
 export interface FindListingsParams extends CursorPageParams {

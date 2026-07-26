@@ -5,18 +5,36 @@ import { useForm } from 'react-hook-form';
 import { useId } from 'react';
 
 import { listingConfig } from '@/entities/listing';
+import { userModel } from '@/entities/user';
 import { NumberField, SelectField } from '@/shared/ui/form';
 
 import * as model from '../model';
 
 export const ListingModal = () => {
-  const [isOpen, editingListing, mutating, catalogItemOptions, validated, closeRequested] = useUnit([
+  const [
+    isOpen,
+    editingListing,
+    mutating,
+    catalogItemOptions,
+    validated,
+    closeRequested,
+    role,
+    sellers,
+    sellersSearch,
+    sellersFetching,
+    sellersSearchChanged,
+  ] = useUnit([
     model.disclosure.$isOpen,
     model.$editingListing,
     model.$mutating,
     model.$catalogItemOptions,
     model.validated,
     model.reset,
+    userModel.$role,
+    model.$sellers,
+    model.$sellersSearch,
+    model.$sellersFetching,
+    model.sellersSearchChanged,
   ]);
 
   const formId = useId();
@@ -45,6 +63,24 @@ export const ListingModal = () => {
           required
           options={catalogItemOptions.map((item) => ({ value: item.id, label: item.name }))}
         />
+        {/* Продавца выбирает только SUPER_ADMIN и только при создании: у продавца он
+            берётся из сессии, а сменить продавца у существующего листинга нельзя. */}
+        {role === 'SUPER_ADMIN' && !editingListing && (
+          <SelectField
+            control={form.control}
+            name="sellerId"
+            label="Продавец"
+            required
+            options={sellers.map((seller) => ({ value: seller.id, label: seller.name }))}
+            loading={sellersFetching}
+            showSearch={{
+              searchValue: sellersSearch,
+              onSearch: sellersSearchChanged,
+              filterOption: false,
+              autoClearSearchValue: true,
+            }}
+          />
+        )}
         <NumberField control={form.control} name="price" label="Цена, сум" min={0} step={0.01} required />
         <NumberField control={form.control} name="stock" label="Остаток" min={0} step={1} required />
         <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
