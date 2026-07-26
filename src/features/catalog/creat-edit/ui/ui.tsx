@@ -65,7 +65,7 @@ export const CatalogItemModal = () => {
           control={form.control}
           name="categoryId"
           label="Категория"
-          required
+          allowClear
           options={categoryOptions.map((category) => ({ value: category.id, label: category.nameRu }))}
           loading={categoriesFetching}
           showSearch={{

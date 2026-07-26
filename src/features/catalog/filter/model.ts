@@ -7,6 +7,13 @@ import { api } from '@/shared/api';
 import { textFactory } from '@/shared/lib/text-factory';
 import { optionsFactory } from '@/shared/lib/options-factory';
 
+/**
+ * Спец-значение селекта категории — «Без категории». Живёт в значении того же
+ * `optionsFactory`, чтобы не заводить второй стор; разбор в query-параметры
+ * (`categoryId` vs `noCategory`) делает `pages/catalog/model.ts`.
+ */
+export const NO_CATEGORY = '__none__';
+
 export const reset = createEvent();
 
 export const searchModel = textFactory({ reset });

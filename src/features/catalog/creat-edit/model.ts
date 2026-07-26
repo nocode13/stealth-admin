@@ -14,7 +14,7 @@ import { message } from '@/shared/lib/message';
 export const schema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   slug: z.string().min(2, 'Минимум 2 символа'),
-  categoryId: z.string().min(1, 'Выберите категорию'),
+  categoryId: z.string().optional(),
   description: z.string().optional(),
   unit: z.string().optional(),
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
@@ -61,7 +61,7 @@ export const createFx = attach({
     api.catalog.create({
       name: values.name,
       slug: values.slug,
-      categoryId: values.categoryId,
+      categoryId: values.categoryId || undefined,
       description: values.description || undefined,
       unit: values.unit || undefined,
       status: values.status,
@@ -75,7 +75,9 @@ export const updateFx = attach({
     return api.catalog.update(editing.id, {
       name: values.name,
       slug: values.slug,
-      categoryId: values.categoryId,
+      // Именно null, а не undefined: undefined в PATCH означает «не менять»,
+      // и очистка селекта не доехала бы до бэкенда.
+      categoryId: values.categoryId || null,
       description: values.description || undefined,
       unit: values.unit || undefined,
       status: role === 'SUPER_ADMIN' ? values.status : undefined,
@@ -130,7 +132,7 @@ sample({
   fn: (item): FormValues => ({
     name: item.name,
     slug: item.slug,
-    categoryId: item.categoryId,
+    categoryId: item.categoryId ?? '',
     description: item.description ?? '',
     unit: item.unit ?? '',
     status: item.status,

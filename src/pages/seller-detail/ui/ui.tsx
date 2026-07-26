@@ -196,7 +196,7 @@ const useCategoryColumns = (): TableProps<Category>['columns'] => {
 const useCatalogColumns = (): TableProps<CatalogItem>['columns'] => {
   return [
     { title: 'Название', dataIndex: 'name' },
-    { title: 'Категория', key: 'category', render: (_, item) => item.category.nameRu },
+    { title: 'Категория', key: 'category', render: (_, item) => item.category?.nameRu ?? '—' },
     {
       title: 'Статус',
       key: 'status',

@@ -68,8 +68,8 @@ export type CatalogItem = {
   id: string;
   name: string;
   slug: string;
-  categoryId: string;
-  category: Category;
+  categoryId: string | null;
+  category: Category | null;
   description: string | null;
   imageUrl: string | null;
   unit: string;
@@ -82,7 +82,8 @@ export type CatalogItem = {
 export interface CatalogItemPayload {
   name: string;
   slug: string;
-  categoryId: string;
+  /** `null` в PATCH снимает категорию; `undefined` — не менять. */
+  categoryId?: string | null;
   description?: string;
   unit?: string;
   status?: ReviewStatus;
@@ -91,6 +92,8 @@ export interface CatalogItemPayload {
 export interface FindCatalogParams extends CursorPageParams {
   search?: string;
   categoryId?: string;
+  /** Только позиции без категории; `categoryId` при этом игнорируется. */
+  noCategory?: boolean;
   status?: ReviewStatus;
   /** Только для SUPER_ADMIN — SELLER скоупится по видимости на бэкенде. */
   sellerId?: string;

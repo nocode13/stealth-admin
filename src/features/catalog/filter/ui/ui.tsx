@@ -18,7 +18,10 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
   const { token } = theme.useToken();
 
   const statusOptions = catalogConfig.useStatusOptions();
-  const categoryOptions = categories.map((category) => ({ label: category.nameRu, value: category.id }));
+  const categoryOptions = [
+    { label: 'Без категории', value: model.NO_CATEGORY },
+    ...categories.map((category) => ({ label: category.nameRu, value: category.id })),
+  ];
 
   return (
     <Row gutter={token.margin} style={{ width: '100%' }}>
