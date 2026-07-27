@@ -25,6 +25,8 @@ export const routes = {
     order: createRoute<{ id: string }>(),
   },
 
+  metrics: createRoute(),
+
   notFound: createRoute(),
   forbidden: createRoute(),
 };
@@ -46,6 +48,8 @@ export const routesMap = [
 
   { route: routes.orders.root, path: '/orders' },
   { route: routes.orders.order, path: '/orders/:id' },
+
+  { route: routes.metrics, path: '/metrics' },
 
   { route: routes.forbidden, path: '/forbidden' },
 ];

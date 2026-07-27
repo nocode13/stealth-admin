@@ -5,6 +5,7 @@ import type { RouteInstance } from 'atomic-router';
 import {
   HomeOutlined,
   AppstoreOutlined,
+  BarChartOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
   UnorderedListOutlined,
@@ -53,9 +54,16 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
   {
     route: routes.listing.root,
     label: 'Продажные позиции',
-    roles: ['SELLER'],
+    roles: ['SELLER', 'SUPER_ADMIN'],
     key: 'listing',
     icon: UnorderedListOutlined,
+  },
+  {
+    route: routes.metrics,
+    label: 'Метрики',
+    roles: ['SUPER_ADMIN'],
+    key: 'metrics',
+    icon: BarChartOutlined,
   },
 ];
 
@@ -66,6 +74,7 @@ export const $activeRoutes = combine({
   catalog: or(routes.catalog.root.$isOpened, routes.catalog.item.$isOpened),
   listing: or(routes.listing.root.$isOpened, routes.listing.item.$isOpened),
   orders: or(routes.orders.root.$isOpened, routes.orders.order.$isOpened),
+  metrics: routes.metrics.$isOpened,
 }).map((routes) =>
   Object.entries(routes)
     .filter(([_, value]) => value)

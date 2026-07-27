@@ -246,3 +246,57 @@ export interface UpdateOrderCourierPayload {
   courierName?: string;
   courierPhone?: string;
 }
+
+export interface FindMetricsPeriodParams {
+  /** ISO-дата, включительно. Не задано — без нижней границы. */
+  from?: string;
+  /** ISO-дата, включительно. Не задано — без верхней границы. */
+  to?: string;
+}
+
+export interface MetricsUsers {
+  newInPeriod: number;
+  totalUsers: number;
+}
+
+export interface MetricsOrdersByStatus {
+  status: OrderStatus;
+  count: number;
+  /** В тиинах (1 сум = 100 тиинов). */
+  total: number;
+}
+
+export interface MetricsOrders {
+  orderCount: number;
+  /** В тиинах (1 сум = 100 тиинов). Исключает CANCELLED. */
+  revenue: number;
+  /** В тиинах (1 сум = 100 тиинов). */
+  averageOrderValue: number;
+  byStatus: MetricsOrdersByStatus[];
+}
+
+export interface MetricsCatalog {
+  activeSellers: number;
+  listingCount: number;
+  catalogItemCount: number;
+  pendingCategories: number;
+  pendingCatalogItems: number;
+}
+
+export interface MetricsOverview {
+  today: {
+    newUsers: number;
+    orderCount: number;
+    /** В тиинах (1 сум = 100 тиинов). */
+    revenue: number;
+  };
+  allTime: {
+    totalUsers: number;
+    totalOrders: number;
+    /** В тиинах (1 сум = 100 тиинов). */
+    totalRevenue: number;
+    activeSellers: number;
+    pendingCategories: number;
+    pendingCatalogItems: number;
+  };
+}
