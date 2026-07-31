@@ -59,7 +59,6 @@ export const SellerModal = () => {
           aspect={PREVIEW_ASPECT.sellerBanner}
           currentUrl={editingSeller.bannerUrl}
           uploading={uploadingBanner}
-          label="Баннер"
           triggerText="Загрузить баннер"
           onConfirm={(file) => model.uploadBannerFx(file)}
           renderPreview={({ src, natural, area }) => (
