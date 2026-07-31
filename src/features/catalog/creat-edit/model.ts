@@ -80,20 +80,36 @@ export const updateFx = attach({
   },
 });
 
-export const uploadImageFx = attach({
+export const addImageFx = attach({
   source: $editingItem,
   effect: (item, file: File) => {
     if (!item) throw new Error('Сначала сохраните позицию');
-    return api.catalog.uploadImage(item.id, file);
+    return api.catalog.addImage(item.id, file);
   },
 });
 
-export const $mutating = or(createFx.pending, updateFx.pending, uploadImageFx.pending);
-export const mutated = merge([createFx.done, updateFx.done, uploadImageFx.done]);
+export const removeImageFx = attach({
+  source: $editingItem,
+  effect: (item, imageId: string) => {
+    if (!item) throw new Error('Сначала сохраните позицию');
+    return api.catalog.removeImage(item.id, imageId);
+  },
+});
+
+export const reorderImageFx = attach({
+  source: $editingItem,
+  effect: (item, params: { imageId: string; direction: 'up' | 'down' }) => {
+    if (!item) throw new Error('Сначала сохраните позицию');
+    return api.catalog.reorderImage(item.id, params.imageId, params.direction);
+  },
+});
+
+export const $mutating = or(createFx.pending, updateFx.pending, addImageFx.pending);
+export const mutated = merge([createFx.done, updateFx.done, addImageFx.done, removeImageFx.done, reorderImageFx.done]);
 /**
- * Закрывает модалку только сохранение самой позиции: после загрузки изображения модалка
- * остаётся открытой, чтобы был виден результат кропа. `mutated` при этом продолжает
- * инвалидировать список страницы — иначе таблица не подтянет новый `imageUrl`.
+ * Закрывает модалку только сохранение самой позиции: после операций с галереей модалка
+ * остаётся открытой, чтобы был виден результат. `mutated` при этом продолжает
+ * инвалидировать список страницы — иначе таблица не подтянет новые `images`.
  */
 const saved = merge([createFx.done, updateFx.done]);
 /** Только что созданная позиция — из неё страница каталога заводит продажную позицию. */
@@ -109,7 +125,7 @@ sample({
 });
 
 sample({
-  clock: [editTriggered, uploadImageFx.doneData],
+  clock: [editTriggered, addImageFx.doneData, removeImageFx.doneData, reorderImageFx.doneData],
   target: $editingItem,
 });
 
@@ -164,6 +180,12 @@ sample({
 message({ clock: mutated, type: 'success', content: 'Позиция каталога сохранена' });
 
 message({
-  clock: merge([createFx.failData, updateFx.failData, uploadImageFx.failData]),
+  clock: merge([
+    createFx.failData,
+    updateFx.failData,
+    addImageFx.failData,
+    removeImageFx.failData,
+    reorderImageFx.failData,
+  ]),
   errorHandle: true,
 });

@@ -64,13 +64,19 @@ export interface FindCategoriesParams extends CursorPageParams {
   sellerId?: string;
 }
 
+export type CatalogItemImage = {
+  id: string;
+  url: string;
+  sortOrder: number;
+};
+
 export type CatalogItem = {
   id: string;
   name: string;
   categoryId: string | null;
   category: Category | null;
   description: string | null;
-  imageUrl: string | null;
+  images: CatalogItemImage[];
   unit: string;
   sellerId: string | null;
   status: ReviewStatus;

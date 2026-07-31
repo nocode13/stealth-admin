@@ -60,9 +60,9 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
   return [
     {
       title: 'Изображение',
-      dataIndex: 'imageUrl',
-      render: (imageUrl: CatalogItem['imageUrl'], item) => (
-        <Avatar shape="square" src={imageUrl ?? undefined}>
+      key: 'image',
+      render: (_, item) => (
+        <Avatar shape="square" src={item.images[0]?.url}>
           {item.name.at(0)}
         </Avatar>
       ),

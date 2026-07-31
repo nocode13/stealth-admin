@@ -1,5 +1,6 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { Modal, Typography } from 'antd';
+import { Button, Flex, Image, Modal, Space, Typography } from 'antd';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
 import { useId } from 'react';
@@ -20,6 +21,8 @@ export const CatalogItemModal = () => {
     mutating,
     categoryOptions,
     uploadingImage,
+    removingImageId,
+    reorderingImageId,
     validated,
     closeRequested,
     role,
@@ -31,7 +34,9 @@ export const CatalogItemModal = () => {
     model.$editingItem,
     model.$mutating,
     model.$categories,
-    model.uploadImageFx.pending,
+    model.addImageFx.pending,
+    model.removeImageFx.pending,
+    model.reorderImageFx.pending,
     model.validated,
     model.reset,
     userModel.$role,
@@ -81,23 +86,57 @@ export const CatalogItemModal = () => {
         )}
       </form>
       {editingItem ? (
-        <ImageCropUpload
-          aspect={PREVIEW_ASPECT.catalog}
-          currentUrl={editingItem.imageUrl}
-          uploading={uploadingImage}
-          label="Изображение"
-          triggerText="Загрузить изображение"
-          onConfirm={(file) => model.uploadImageFx(file)}
-          renderPreview={({ src, natural, area }) => (
-            <CatalogPreview
-              src={src}
-              natural={natural}
-              area={area}
-              name={form.watch('name') || editingItem.name}
-              category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.nameRu}
-            />
+        <>
+          <Typography.Text style={{ display: 'block', marginTop: 16, marginBottom: 6 }}>Фото</Typography.Text>
+          {editingItem.images.length > 0 && (
+            <Space wrap style={{ marginBottom: 8 }}>
+              {editingItem.images.map((image, index) => (
+                <Flex key={image.id} vertical align="center" gap={4}>
+                  <Image src={image.url} alt={editingItem.name} width={80} height={80} style={{ objectFit: 'cover' }} />
+                  <Space size={4}>
+                    <Button
+                      size="small"
+                      icon={<ArrowUpOutlined />}
+                      disabled={index === 0 || reorderingImageId}
+                      loading={reorderingImageId}
+                      onClick={() => model.reorderImageFx({ imageId: image.id, direction: 'up' })}
+                    />
+                    <Button
+                      size="small"
+                      icon={<ArrowDownOutlined />}
+                      disabled={index === editingItem.images.length - 1 || reorderingImageId}
+                      loading={reorderingImageId}
+                      onClick={() => model.reorderImageFx({ imageId: image.id, direction: 'down' })}
+                    />
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      disabled={removingImageId}
+                      loading={removingImageId}
+                      onClick={() => model.removeImageFx(image.id)}
+                    />
+                  </Space>
+                </Flex>
+              ))}
+            </Space>
           )}
-        />
+          <ImageCropUpload
+            aspect={PREVIEW_ASPECT.catalog}
+            uploading={uploadingImage}
+            triggerText="Добавить фото"
+            onConfirm={(file) => model.addImageFx(file)}
+            renderPreview={({ src, natural, area }) => (
+              <CatalogPreview
+                src={src}
+                natural={natural}
+                area={area}
+                name={form.watch('name') || editingItem.name}
+                category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.nameRu}
+              />
+            )}
+          />
+        </>
       ) : (
         <Typography.Text type="secondary">Сохраните позицию, чтобы загрузить изображение.</Typography.Text>
       )}

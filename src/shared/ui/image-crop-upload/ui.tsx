@@ -20,10 +20,9 @@ type Picked = {
 export type ImageCropUploadProps = {
   /** Соотношение сторон кропа — `PREVIEW_ASPECT.catalog` / `PREVIEW_ASPECT.sellerBanner`. */
   aspect: number;
-  /** Уже загруженное изображение — показывается над кнопкой. */
-  currentUrl: string | null;
+  /** Уже загруженное изображение — показывается над кнопкой. Не передавать, если превью не нужно (например, галерея из нескольких фото рендерится отдельно). */
+  currentUrl?: string | null;
   uploading: boolean;
-  label: string;
   triggerText: string;
   onConfirm: (file: File) => void;
   /** Превью маркетплейса; перерисовывается на каждое движение рамки. */
@@ -38,7 +37,6 @@ export const ImageCropUpload = ({
   aspect,
   currentUrl,
   uploading,
-  label,
   triggerText,
   onConfirm,
   renderPreview,
@@ -84,8 +82,7 @@ export const ImageCropUpload = ({
 
   return (
     <div style={{ marginTop: 16 }}>
-      <Typography.Text style={{ display: 'block', marginBottom: 6 }}>{label}</Typography.Text>
-      {!!currentUrl && <Image src={currentUrl} alt={label} width={aspect >= 2 ? 160 : 80} />}
+      {!!currentUrl && <Image src={currentUrl} width={aspect >= 2 ? 160 : 80} />}
       <div style={{ marginTop: 8 }}>
         <Upload
           accept="image/*"
