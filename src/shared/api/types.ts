@@ -6,8 +6,10 @@ export interface User {
   email: string;
   role: Role;
   sellerId: string | null;
-  /** Привязанный Telegram. Пока null — заказы продавцу в бота не приходят. */
+  /** Адрес покупателя в основном боте — к админке отношения не имеет. */
   telegramId: string | null;
+  /** Рабочий Telegram (бот продавца). Пока null — заказы в бота не приходят. */
+  staffTelegramId: string | null;
 }
 
 /** Ответ POST /admin/auth/telegram/link — ссылка на бота с одноразовым nonce. */
@@ -167,6 +169,32 @@ export interface UpdateSellerPayload {
 export interface FindSellersParams extends CursorPageParams {
   search?: string;
   status?: SellerStatus;
+}
+
+/**
+ * Сотрудник продавца. Их может быть несколько на одного продавца, и новый заказ
+ * в бота получают все с `telegramLinked: true`. Владелец — такой же сотрудник,
+ * только неудаляемый.
+ */
+export interface SellerStaff {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  /** Привязан рабочий Telegram — значит заказы приходят в бота продавца. */
+  telegramLinked: boolean;
+  isOwner: boolean;
+  /** Задан пароль — может входить в админку. Без него остаётся только бот. */
+  hasPassword: boolean;
+  createdAt: string;
+}
+
+/** Все поля опциональны: минимум — имя, дальше инвайт-ссылка в бота. */
+export interface SellerStaffPayload {
+  name?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
 }
 
 export type OrderStatus =

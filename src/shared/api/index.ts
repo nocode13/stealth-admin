@@ -34,6 +34,8 @@ export type {
   ReviewStatus,
   Role,
   Seller,
+  SellerStaff,
+  SellerStaffPayload,
   SellerStatus,
   UpdateOrderCourierPayload,
   User,

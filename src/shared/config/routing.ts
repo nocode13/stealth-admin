@@ -25,6 +25,9 @@ export const routes = {
     order: createRoute<{ id: string }>(),
   },
 
+  // Своя команда — для владельца продавца: раздела «Продавцы» у него нет.
+  team: createRoute(),
+
   metrics: createRoute(),
 
   notFound: createRoute(),
@@ -48,6 +51,8 @@ export const routesMap = [
 
   { route: routes.orders.root, path: '/orders' },
   { route: routes.orders.order, path: '/orders/:id' },
+
+  { route: routes.team, path: '/team' },
 
   { route: routes.metrics, path: '/metrics' },
 

@@ -1,6 +1,7 @@
 import { createEffect, createEvent, createStore, merge, sample } from 'effector';
 import { cache, concurrency, createQuery } from 'effector-refetch';
 
+import { sellerStaffFactory } from '@/widgets/seller-staff';
 import { SellerCreateEdit } from '@/features/seller/creat-edit';
 import { ChangeOrderStatus } from '@/features/order/change-status';
 import type { Order } from '@/entities/order';
@@ -81,6 +82,12 @@ export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
   });
   const $listings = createStore<Listing[]>([]).on(fetchListingsQuery.finished.done, (_, { result }) => result.items);
 
+  // Команда продавца — тот же виджет, что и на странице «Сотрудники» у владельца,
+  // только sellerId берётся из параметров роута, а не из текущего пользователя.
+  const staffModel = sellerStaffFactory({
+    $sellerId: authorizedRoute.$params.map((params) => params.id ?? null),
+  });
+
   sample({
     clock: authorizedRoute.opened,
     source: authorizedRoute.$params,
@@ -147,6 +154,7 @@ export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
   });
 
   return {
+    staffModel,
     $seller,
     $orders,
     $nextCursor,
