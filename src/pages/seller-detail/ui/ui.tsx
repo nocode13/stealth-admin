@@ -2,6 +2,7 @@
 import { Button, Card, Flex, Image, Spin, Table, Typography, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
+import { SellerStaffTable } from '@/widgets/seller-staff';
 import { ChangeOrderStatus } from '@/features/order/change-status';
 import { SellerCreateEdit } from '@/features/seller/creat-edit';
 import { StatusTag as SellerStatusTag } from '@/entities/seller';
@@ -90,6 +91,8 @@ const Page = ({ model }: LazyPageProps<Model>) => {
           </Flex>
         )}
       </Card>
+
+      <SellerStaffTable model={model.staffModel} />
 
       <Card title="Свои категории" size="small">
         <Table

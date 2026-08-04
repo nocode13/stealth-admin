@@ -25,8 +25,12 @@ export const $session = createStore<BotLinkSession | null>(null)
 
 export const $pending = createLinkFx.pending;
 
-/** Уже привязан — вместо кнопки показываем статус. */
-export const $isLinked = userModel.$user.map((user) => !!user?.telegramId);
+/**
+ * Уже привязан — вместо кнопки показываем статус. Смотрим именно
+ * `staffTelegramId`: `telegramId` — это адрес покупателя в основном боте, у
+ * продавца он обычно пустой и к заказам в кабинете отношения не имеет.
+ */
+export const $isLinked = userModel.$user.map((user) => !!user?.staffTelegramId);
 
 sample({ clock: triggered, target: [createLinkFx, disclosure.opened] });
 sample({ clock: closed, target: disclosure.closed });

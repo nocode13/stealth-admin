@@ -10,6 +10,7 @@ import {
   ShoppingCartOutlined,
   UnorderedListOutlined,
   TagsOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 
 import { userModel, type Role } from '@/entities/user';
@@ -59,6 +60,15 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
     icon: UnorderedListOutlined,
   },
   {
+    // Пускаем только SELLER: у SUPER_ADMIN команда живёт на карточке продавца,
+    // потому что своей у него нет.
+    route: routes.team,
+    label: 'Сотрудники',
+    roles: ['SELLER'],
+    key: 'team',
+    icon: TeamOutlined,
+  },
+  {
     route: routes.metrics,
     label: 'Метрики',
     roles: ['SUPER_ADMIN'],
@@ -74,6 +84,7 @@ export const $activeRoutes = combine({
   catalog: or(routes.catalog.root.$isOpened, routes.catalog.item.$isOpened),
   listing: or(routes.listing.root.$isOpened, routes.listing.item.$isOpened),
   orders: or(routes.orders.root.$isOpened, routes.orders.order.$isOpened),
+  team: routes.team.$isOpened,
   metrics: routes.metrics.$isOpened,
 }).map((routes) =>
   Object.entries(routes)

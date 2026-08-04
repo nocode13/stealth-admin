@@ -12,6 +12,7 @@ import { OrderDetail } from './order-detail';
 import { Orders } from './orders';
 import { Sellers } from './sellers';
 import { SellerDetail } from './seller-detail';
+import { Team } from './team';
 
 export const Pages = createRoutesView({
   routes: [
@@ -24,6 +25,7 @@ export const Pages = createRoutesView({
     OrderDetail,
     Sellers,
     SellerDetail,
+    Team,
     Metrics,
     NotFound,
     Forbidden,
