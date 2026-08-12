@@ -11,6 +11,9 @@ import { createDisclosure } from '@/shared/lib/disclosure';
 import { createForm } from '@/shared/lib/form';
 import { message } from '@/shared/lib/message';
 
+/** Лимит на видео из mediaUploadOptions бэкенда — отсекаем до отправки 50 МБ по сети. */
+export const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+
 export const schema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   categoryId: z.string().optional(),
@@ -38,6 +41,8 @@ export const editTriggered = createEvent<CatalogItem>();
 export const reset = createEvent();
 export const validated = createEvent();
 export const categoriesSearchChanged = createEvent<string>();
+/** Ручное «Обновить» в модалке: подтянуть позицию, пока её видео обрабатывается. */
+export const refreshTriggered = createEvent();
 
 export const $editingItem = createStore<CatalogItem | null>(null);
 export const $mode = createStore<'create' | 'edit'>('create');
@@ -80,36 +85,45 @@ export const updateFx = attach({
   },
 });
 
-export const addImageFx = attach({
+export const addMediaFx = attach({
   source: $editingItem,
   effect: (item, file: File) => {
     if (!item) throw new Error('Сначала сохраните позицию');
-    return api.catalog.addImage(item.id, file);
+    return api.catalog.addMedia(item.id, file);
   },
 });
 
-export const removeImageFx = attach({
+export const removeMediaFx = attach({
   source: $editingItem,
-  effect: (item, imageId: string) => {
+  effect: (item, mediaId: string) => {
     if (!item) throw new Error('Сначала сохраните позицию');
-    return api.catalog.removeImage(item.id, imageId);
+    return api.catalog.removeMedia(item.id, mediaId);
   },
 });
 
-export const reorderImageFx = attach({
+export const reorderMediaFx = attach({
   source: $editingItem,
-  effect: (item, params: { imageId: string; direction: 'up' | 'down' }) => {
+  effect: (item, params: { mediaId: string; direction: 'up' | 'down' }) => {
     if (!item) throw new Error('Сначала сохраните позицию');
-    return api.catalog.reorderImage(item.id, params.imageId, params.direction);
+    return api.catalog.reorderMedia(item.id, params.mediaId, params.direction);
   },
 });
 
-export const $mutating = or(createFx.pending, updateFx.pending, addImageFx.pending);
-export const mutated = merge([createFx.done, updateFx.done, addImageFx.done, removeImageFx.done, reorderImageFx.done]);
+/** Перечитывает позицию, пока её видео транскодится на бэкенде. */
+const refetchItemFx = attach({
+  source: $editingItem,
+  effect: (item) => {
+    if (!item) throw new Error('Нет открытой позиции');
+    return api.catalog.findOne(item.id);
+  },
+});
+
+export const $mutating = or(createFx.pending, updateFx.pending, addMediaFx.pending);
+export const mutated = merge([createFx.done, updateFx.done, addMediaFx.done, removeMediaFx.done, reorderMediaFx.done]);
 /**
  * Закрывает модалку только сохранение самой позиции: после операций с галереей модалка
  * остаётся открытой, чтобы был виден результат. `mutated` при этом продолжает
- * инвалидировать список страницы — иначе таблица не подтянет новые `images`.
+ * инвалидировать список страницы — иначе таблица не подтянет новые `media`.
  */
 const saved = merge([createFx.done, updateFx.done]);
 /** Только что созданная позиция — из неё страница каталога заводит продажную позицию. */
@@ -125,9 +139,22 @@ sample({
 });
 
 sample({
-  clock: [editTriggered, addImageFx.doneData, removeImageFx.doneData, reorderImageFx.doneData],
+  clock: [editTriggered, addMediaFx.doneData, removeMediaFx.doneData, reorderMediaFx.doneData, refetchItemFx.doneData],
   target: $editingItem,
 });
+
+/**
+ * Видео транскодится фоном, поэтому строка приходит со `status: PROCESSING`, и
+ * готовое mp4 с обложкой появляются только в следующем ответе. Поллинга нет
+ * намеренно — состояние обновляется кнопкой «Обновить» в модалке.
+ */
+export const $hasProcessingMedia = $editingItem.map(
+  (item) => !!item?.media.some((media) => media.status === 'PROCESSING'),
+);
+
+export const $refreshing = refetchItemFx.pending;
+
+sample({ clock: refreshTriggered, target: refetchItemFx });
 
 sample({
   clock: fetchCategoriesQuery.finished.done,
@@ -183,9 +210,9 @@ message({
   clock: merge([
     createFx.failData,
     updateFx.failData,
-    addImageFx.failData,
-    removeImageFx.failData,
-    reorderImageFx.failData,
+    addMediaFx.failData,
+    removeMediaFx.failData,
+    reorderMediaFx.failData,
   ]),
   errorHandle: true,
 });

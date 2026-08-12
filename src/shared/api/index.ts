@@ -9,6 +9,7 @@ import { sellers } from './sellers';
 export type {
   BotLinkSession,
   CatalogItem,
+  CatalogItemMedia,
   CatalogItemPayload,
   Category,
   CategoryPayload,
