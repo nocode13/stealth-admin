@@ -3,15 +3,16 @@ import { Button, Flex, Image, Modal, Space, Spin, Typography, Upload, message as
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlayCircleFilled } from '@ant-design/icons';
 import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
 
 import { catalogConfig } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
 import type { CatalogItemMedia } from '@/shared/api';
 import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
+import { MAX_IMAGE_SIZE } from '@/shared/lib/crop-image';
 import { SelectField, TextAreaField, TextField } from '@/shared/ui/form';
-import { ImageCropUpload } from '@/shared/ui/image-crop-upload';
+import { ImageCropModal } from '@/shared/ui/image-crop-upload';
 import { CatalogPreview } from '@/shared/ui/marketplace-preview';
 
 import * as model from '../model';
@@ -120,6 +121,7 @@ export const CatalogItemModal = () => {
   ]);
 
   const formId = useId();
+  const [pickedImage, setPickedImage] = useState<File | null>(null);
 
   const form = useForm<model.FormValues>({
     resolver: standardSchemaResolver(model.schema),
@@ -195,39 +197,57 @@ export const CatalogItemModal = () => {
               ))}
             </Space>
           )}
-          <Space wrap>
-            <ImageCropUpload
-              aspect={PREVIEW_ASPECT.catalog}
-              uploading={uploadingMedia}
-              triggerText="Добавить фото"
-              onConfirm={(file) => model.addMediaFx(file)}
-              renderPreview={({ src, natural, area }) => (
-                <CatalogPreview
-                  src={src}
-                  natural={natural}
-                  area={area}
-                  name={form.watch('name') || editingItem.name}
-                  category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.nameRu}
-                />
-              )}
-            />
-            {/* Видео кропать нечем и незачем — обложку бэкенд вырезает из кадра сам,
-                поэтому это обычный upload, а не ImageCropUpload. */}
+          {/* Одна кнопка на фото и видео — эндпоинт `POST /catalog/:id/media` общий, тип
+              бэкенд определяет по содержимому. Разница только в клиентском шаге: фото
+              прогоняем через кадрирование с превью маркетплейса, видео грузим как есть —
+              обложку бэкенд вырезает из кадра сам. */}
+          <div style={{ marginTop: 8 }}>
             <Upload
-              accept="video/*"
+              accept="image/*,video/*"
               showUploadList={false}
               beforeUpload={(file) => {
-                if (file.size > model.MAX_VIDEO_SIZE) {
-                  antMessage.error('Видео больше 50 МБ');
+                const picked = file as unknown as File;
+                if (picked.type.startsWith('video/')) {
+                  if (picked.size > model.MAX_VIDEO_SIZE) {
+                    void antMessage.error('Видео больше 50 МБ');
+                  } else {
+                    model.addMediaFx(picked);
+                  }
+                } else if (picked.type.startsWith('image/')) {
+                  if (picked.size > MAX_IMAGE_SIZE) {
+                    void antMessage.error('Максимальный размер фото — 5 МБ');
+                  } else {
+                    setPickedImage(picked);
+                  }
                 } else {
-                  model.addMediaFx(file as unknown as File);
+                  void antMessage.error('Нужен файл изображения или видео');
                 }
                 return Upload.LIST_IGNORE;
               }}
             >
-              <Button loading={uploadingMedia}>Добавить видео</Button>
+              <Button loading={uploadingMedia}>Добавить фото или видео</Button>
             </Upload>
-          </Space>
+          </div>
+
+          <ImageCropModal
+            file={pickedImage}
+            aspect={PREVIEW_ASPECT.catalog}
+            uploading={uploadingMedia}
+            onCancel={() => setPickedImage(null)}
+            onConfirm={(file) => {
+              model.addMediaFx(file);
+              setPickedImage(null);
+            }}
+            renderPreview={({ src, natural, area }) => (
+              <CatalogPreview
+                src={src}
+                natural={natural}
+                area={area}
+                name={form.watch('name') || editingItem.name}
+                category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.nameRu}
+              />
+            )}
+          />
           {hasProcessingMedia && (
             <Flex align="center" gap={8} style={{ marginTop: 8 }}>
               <Typography.Text type="secondary">Видео обрабатывается на сервере.</Typography.Text>

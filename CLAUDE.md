@@ -163,12 +163,22 @@ Segmented-фильтр по статусу, см. ниже). Эталон — `c
   инкапсулирован в её `factory()`). Статус (`ReviewStatus`) — обычное поле формы в общем
   `PATCH /catalog/:id` (отдельного эндпоинта под статус на бэке больше нет), но в `updateFx` поле
   `status` отправляется только если `role === 'SUPER_ADMIN'`, и в UI селект статуса показан только
-  при этом условии и только в режиме редактирования. Изображение — `POST /catalog/:id/image`
-  (multipart, только в edit-режиме — эндпоинту нужен существующий `id`); на фронте `Content-Type`
-  инстанса `base` явно сбрасывается в `undefined` на этот запрос, чтобы браузер сам проставил
-  multipart-boundary. `mutated` — `merge([createFx.done, updateFx.done, uploadImageFx.done])`
-  (не отдельный вручную заведённый `createEvent`), `$editingItem` синхронизируется через `sample`
-  на `[editTriggered, uploadImageFx.doneData]`, а не инлайновым `.on()/.reset()`.
+  при этом условии и только в режиме редактирования. Фото/видео — галерея `CatalogItem.media[]`,
+  один эндпоинт `POST /catalog/:id/media` (multipart, тип определяется на бэкенде по mimetype,
+  только в edit-режиме — эндпоинту нужен существующий `id`); на фронте `Content-Type` инстанса
+  `base` явно сбрасывается в `undefined` на этот запрос, чтобы браузер сам проставил
+  multipart-boundary. В модалке одна кнопка «Добавить фото или видео» (antd `Upload accept="image/*,video/*"`),
+  маршрутизация по mimetype — на клиенте: изображение открывает `ImageCropModal` (кроп +
+  превью маркетплейса, из `shared/ui/image-crop-upload`), видео проверяется на 50 МБ и грузится
+  сразу без кропа (обложку бэкенд вырезает из кадра сам, транскодинг — фоном, статус `PROCESSING` →
+  готовое видео подтягивается кнопкой «Обновить», без поллинга). `shared/ui/image-crop-upload`
+  экспортирует два компонента: `ImageCropUpload` (триггер-ссылка + кроп, для одиночного изображения —
+  баннер продавца) и `ImageCropModal` (контролируемая модалка кропа для случаев со своим триггером,
+  как кнопка каталога — файл передаётся пропом, а не выбирается самой модалкой). `addMediaFx` —
+  общий эффект и для фото, и для видео; `mutated` — `merge([createFx.done, updateFx.done,
+  addMediaFx.done, removeMediaFx.done, reorderMediaFx.done])`, `$editingItem` синхронизируется через
+  `sample` на `[editTriggered, addMediaFx.doneData, removeMediaFx.doneData, reorderMediaFx.doneData,
+  refetchItemFx.doneData]`, а не инлайновым `.on()/.reset()`.
 - **Продажные позиции** (`features/listing/creat-edit` + `features/listing/delete`) — полный CRUD,
   доступно только продавцу (`roles: ['SELLER']`), без разделения мастер/продавец, поэтому Edit/Delete
   в таблице показаны без доп. ролевых гейтов. `status` (`ListingStatus`) — обычное поле формы в обоих
