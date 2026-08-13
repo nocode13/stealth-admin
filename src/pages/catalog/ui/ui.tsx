@@ -61,8 +61,9 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
     {
       title: 'Изображение',
       key: 'image',
+      // В галерее первым может стоять видео — тогда в аватарке его обложка.
       render: (_, item) => (
-        <Avatar shape="square" src={item.images[0]?.url}>
+        <Avatar shape="square" src={item.media[0]?.posterUrl ?? item.media[0]?.url}>
           {item.name.at(0)}
         </Avatar>
       ),

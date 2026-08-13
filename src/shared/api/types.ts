@@ -66,9 +66,19 @@ export interface FindCategoriesParams extends CursorPageParams {
   sellerId?: string;
 }
 
-export type CatalogItemImage = {
+export type MediaType = 'IMAGE' | 'VIDEO';
+
+/** PROCESSING/FAILED бывают только у видео: транскод идёт фоном уже после ответа на загрузку. */
+export type MediaStatus = 'PROCESSING' | 'READY' | 'FAILED';
+
+export type CatalogItemMedia = {
   id: string;
+  type: MediaType;
+  status: MediaStatus;
+  /** У видео до окончания обработки — ссылка на оригинал, после — на mp4. */
   url: string;
+  /** Обложка видео (кадр из него), у фото всегда null. */
+  posterUrl: string | null;
   sortOrder: number;
 };
 
@@ -78,7 +88,8 @@ export type CatalogItem = {
   categoryId: string | null;
   category: Category | null;
   description: string | null;
-  images: CatalogItemImage[];
+  /** Фото и видео одной галереей, сквозной порядок по sortOrder. */
+  media: CatalogItemMedia[];
   unit: string;
   sellerId: string | null;
   status: ReviewStatus;
