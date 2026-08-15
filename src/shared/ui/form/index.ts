@@ -6,4 +6,6 @@ export { NumberField } from './number-field';
 export type { NumberFieldProps } from './number-field';
 export { SelectField } from './select-field';
 export type { SelectFieldProps } from './select-field';
+export { SwitchField } from './switch-field';
+export type { SwitchFieldProps } from './switch-field';
 export type { FieldProps } from './types';

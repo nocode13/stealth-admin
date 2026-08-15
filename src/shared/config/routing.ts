@@ -30,6 +30,8 @@ export const routes = {
 
   metrics: createRoute(),
 
+  settings: createRoute(),
+
   notFound: createRoute(),
   forbidden: createRoute(),
 };
@@ -55,6 +57,8 @@ export const routesMap = [
   { route: routes.team, path: '/team' },
 
   { route: routes.metrics, path: '/metrics' },
+
+  { route: routes.settings, path: '/settings' },
 
   { route: routes.forbidden, path: '/forbidden' },
 ];

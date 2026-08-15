@@ -12,6 +12,7 @@ import { OrderDetail } from './order-detail';
 import { Orders } from './orders';
 import { Sellers } from './sellers';
 import { SellerDetail } from './seller-detail';
+import { Settings } from './settings';
 import { Team } from './team';
 
 export const Pages = createRoutesView({
@@ -27,6 +28,7 @@ export const Pages = createRoutesView({
     SellerDetail,
     Team,
     Metrics,
+    Settings,
     NotFound,
     Forbidden,
   ],

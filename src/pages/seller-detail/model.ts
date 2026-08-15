@@ -3,8 +3,7 @@ import { cache, concurrency, createQuery } from 'effector-refetch';
 
 import { sellerStaffFactory } from '@/widgets/seller-staff';
 import { SellerCreateEdit } from '@/features/seller/creat-edit';
-import { ChangeOrderStatus } from '@/features/order/change-status';
-import type { Order } from '@/entities/order';
+import type { OrderGroup } from '@/entities/order';
 import type { Category } from '@/entities/category';
 import type { CatalogItem } from '@/entities/catalog';
 import type { Listing } from '@/entities/listing';
@@ -46,7 +45,7 @@ export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
     ),
   });
 
-  const $orders = createStore<Order[]>([]).on(fetchOrdersQuery.finished.done, (items, { result: { data } }) =>
+  const $orders = createStore<OrderGroup[]>([]).on(fetchOrdersQuery.finished.done, (items, { result: { data } }) =>
     items.concat(data.items),
   );
 
@@ -130,7 +129,6 @@ export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
       $catalogItems.reinit,
       $listings.reinit,
       SellerCreateEdit.model.reset,
-      ChangeOrderStatus.model.reset,
     ],
   });
 

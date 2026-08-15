@@ -1,4 +1,4 @@
-import type { OrderStatus } from '@/shared/api';
+import type { OrderGroupStatus, OrderStatus } from '@/shared/api';
 import { formatAmount } from '@/shared/lib/currency/currency';
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -9,6 +9,19 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   ARRIVED: 'Курьер на месте',
   DELIVERED: 'Доставлен',
   CANCELLED: 'Отменён',
+};
+
+/** Подписи статуса ГРУППЫ — зеркалят ORDER_STATUS_LABELS, плюс своё значение
+ * PARTIALLY_DELIVERED (часть заказов группы уже доставлена, часть ещё нет). */
+export const ORDER_GROUP_STATUS_LABELS: Record<OrderGroupStatus, string> = {
+  NEW: ORDER_STATUS_LABELS.NEW,
+  CONFIRMED: ORDER_STATUS_LABELS.CONFIRMED,
+  ASSEMBLING: ORDER_STATUS_LABELS.ASSEMBLING,
+  DELIVERING: ORDER_STATUS_LABELS.DELIVERING,
+  ARRIVED: ORDER_STATUS_LABELS.ARRIVED,
+  PARTIALLY_DELIVERED: 'Частично доставлен',
+  DELIVERED: ORDER_STATUS_LABELS.DELIVERED,
+  CANCELLED: ORDER_STATUS_LABELS.CANCELLED,
 };
 
 /**

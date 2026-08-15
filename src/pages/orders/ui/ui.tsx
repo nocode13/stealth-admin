@@ -2,8 +2,7 @@
 import { Button, Flex, Segmented, Table, Typography, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
-import { ChangeOrderStatus } from '@/features/order/change-status';
-import { ORDER_STATUS_LABELS, StatusTag, formatMoney, type Order } from '@/entities/order';
+import { GroupStatusTag, ORDER_GROUP_STATUS_LABELS, formatMoney, type OrderGroup } from '@/entities/order';
 import { userModel } from '@/entities/user';
 import { routes } from '@/shared/config/routing';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
@@ -16,13 +15,14 @@ type Model = ReturnType<typeof factory>;
 
 const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'ALL', label: 'Все' },
-  { value: 'NEW', label: ORDER_STATUS_LABELS.NEW },
-  { value: 'CONFIRMED', label: ORDER_STATUS_LABELS.CONFIRMED },
-  { value: 'ASSEMBLING', label: ORDER_STATUS_LABELS.ASSEMBLING },
-  { value: 'DELIVERING', label: ORDER_STATUS_LABELS.DELIVERING },
-  { value: 'ARRIVED', label: ORDER_STATUS_LABELS.ARRIVED },
-  { value: 'DELIVERED', label: ORDER_STATUS_LABELS.DELIVERED },
-  { value: 'CANCELLED', label: ORDER_STATUS_LABELS.CANCELLED },
+  { value: 'NEW', label: ORDER_GROUP_STATUS_LABELS.NEW },
+  { value: 'CONFIRMED', label: ORDER_GROUP_STATUS_LABELS.CONFIRMED },
+  { value: 'ASSEMBLING', label: ORDER_GROUP_STATUS_LABELS.ASSEMBLING },
+  { value: 'DELIVERING', label: ORDER_GROUP_STATUS_LABELS.DELIVERING },
+  { value: 'ARRIVED', label: ORDER_GROUP_STATUS_LABELS.ARRIVED },
+  { value: 'PARTIALLY_DELIVERED', label: ORDER_GROUP_STATUS_LABELS.PARTIALLY_DELIVERED },
+  { value: 'DELIVERED', label: ORDER_GROUP_STATUS_LABELS.DELIVERED },
+  { value: 'CANCELLED', label: ORDER_GROUP_STATUS_LABELS.CANCELLED },
 ];
 
 const Page = ({ model }: LazyPageProps<Model>) => {
@@ -48,8 +48,8 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         columns={columns}
         pagination={false}
         style={{ width: '100%' }}
-        onRow={(order) => ({
-          onClick: () => routes.orders.order.open({ id: order.id }),
+        onRow={(group) => ({
+          onClick: () => routes.orders.order.open({ id: group.id }),
           style: { cursor: 'pointer' },
         })}
       />
@@ -60,34 +60,33 @@ const Page = ({ model }: LazyPageProps<Model>) => {
           </Button>
         </Flex>
       )}
-      <ChangeOrderStatus.View />
     </Flex>
   );
 };
 
-const useColumns = (): TableProps<Order>['columns'] => {
+const useColumns = (): TableProps<OrderGroup>['columns'] => {
   const [role] = useUnit([userModel.$role]);
 
   return [
     {
       title: '№',
-      key: 'orderNumber',
-      render: (_, order) => <Typography.Text strong>#{order.orderNumber}</Typography.Text>,
+      key: 'groupNumber',
+      render: (_, group) => <Typography.Text strong>№{group.groupNumber}</Typography.Text>,
       width: 90,
     },
     {
       title: 'Статус',
       key: 'status',
-      render: (_, order) => <StatusTag status={order.status} />,
+      render: (_, group) => <GroupStatusTag status={group.status} />,
     },
     {
       title: 'Получатель',
       key: 'contact',
-      render: (_, order) => (
+      render: (_, group) => (
         <Flex vertical>
-          <span>{order.contactName}</span>
+          <span>{group.contactName}</span>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {order.contactPhone}
+            {group.contactPhone}
           </Typography.Text>
         </Flex>
       ),
@@ -95,43 +94,27 @@ const useColumns = (): TableProps<Order>['columns'] => {
     {
       title: 'Адрес',
       key: 'address',
-      render: (_, order) => <Typography.Text style={{ fontSize: 12 }}>{order.deliveryAddress}</Typography.Text>,
+      render: (_, group) => <Typography.Text style={{ fontSize: 12 }}>{group.deliveryAddress}</Typography.Text>,
     },
-    // Продавец видит только свои заказы, колонка ему не нужна.
+    // Продавец видит только свои заказы в каждой группе, колонка ему не нужна.
     ...(role === 'SUPER_ADMIN'
       ? [
           {
-            title: 'Продавец',
-            key: 'seller',
-            render: (_: unknown, order: Order) => order.seller.name,
+            title: 'Продавцы',
+            key: 'sellers',
+            render: (_: unknown, group: OrderGroup) => group.orders.map((order) => order.seller.name).join(', '),
           },
         ]
       : []),
     {
       title: 'Сумма',
       key: 'total',
-      render: (_, order) => formatMoney(order.total),
+      render: (_, group) => formatMoney(group.total),
     },
     {
       title: 'Создан',
       key: 'createdAt',
-      render: (_, order) => formatDate(order.createdAt),
-    },
-    {
-      key: 'actions',
-      render: (_, order) => (
-        <Button
-          size="small"
-          onClick={(event) => {
-            // Иначе сработает onRow и нас уведёт на детальную.
-            event.stopPropagation();
-            ChangeOrderStatus.model.triggered(order);
-          }}
-        >
-          Статус
-        </Button>
-      ),
-      width: 96,
+      render: (_, group) => formatDate(group.createdAt),
     },
   ];
 };

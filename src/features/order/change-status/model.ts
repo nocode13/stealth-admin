@@ -2,7 +2,7 @@ import { attach, createEvent, createStore, sample } from 'effector';
 import { delay } from 'patronum';
 import { z } from 'zod/v4';
 
-import { ALLOWED_TRANSITIONS, type Order, type OrderStatus } from '@/entities/order';
+import { ALLOWED_TRANSITIONS, type Order, type OrderGroup, type OrderStatus } from '@/entities/order';
 import { api } from '@/shared/api';
 import { createDisclosure } from '@/shared/lib/disclosure';
 import { createForm } from '@/shared/lib/form';
@@ -22,8 +22,12 @@ export const disclosure = createDisclosure();
 
 export const triggered = createEvent<Order>();
 export const reset = createEvent();
-/** Статус сменился — списки заказов слушают это событие для инвалидации. */
-export const mutated = createEvent<Order>();
+/**
+ * Статус сменился — несёт ВСЮ группу целиком (бэкенд отдаёт группу, а не заказ,
+ * см. AGENTS.md «Заказы»): деталка кладёт её в своё состояние одним объектом,
+ * листинг просто использует событие для инвалидации кэша.
+ */
+export const mutated = createEvent<OrderGroup>();
 export const validated = createEvent();
 
 export const $order = createStore<Order | null>(null)
