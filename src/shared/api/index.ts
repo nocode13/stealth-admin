@@ -5,6 +5,7 @@ import { listing } from './listing';
 import { metrics } from './metrics';
 import { orders } from './orders';
 import { sellers } from './sellers';
+import { settings } from './settings';
 
 export type {
   BotLinkSession,
@@ -27,11 +28,14 @@ export type {
   MetricsOverview,
   MetricsUsers,
   Order,
+  OrderGroup,
+  OrderGroupStatus,
   OrderItem,
   OrderStatus,
   OrderStatusHistoryEntry,
   PaymentMethod,
   PaymentStatus,
+  PlatformSettings,
   ReviewStatus,
   Role,
   Seller,
@@ -39,9 +43,10 @@ export type {
   SellerStaffPayload,
   SellerStatus,
   UpdateOrderCourierPayload,
+  UpdatePlatformSettingsPayload,
   User,
 } from './types';
 export { getApiErrorMessage } from './error';
 export { base } from './instances';
 
-export const api = { auth, category, catalog, listing, metrics, orders, sellers };
+export const api = { auth, category, catalog, listing, metrics, orders, sellers, settings };

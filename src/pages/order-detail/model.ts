@@ -1,8 +1,9 @@
 import { createEffect, createStore, merge, sample } from 'effector';
 import { cache, concurrency, createQuery } from 'effector-refetch';
 
+import { ChangeGroupStatus } from '@/features/order/change-group-status';
 import { ChangeOrderStatus } from '@/features/order/change-status';
-import type { Order } from '@/entities/order';
+import type { OrderGroup } from '@/entities/order';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
 import type { LazyPageFactoryParams } from '@/shared/lib/create-lazy-page';
@@ -11,6 +12,9 @@ import { message } from '@/shared/lib/message';
 /**
  * Первая в проекте страница с параметром роута: id берём из `route.$params`
  * (детальных страниц раньше не было — всё редактировалось в модалках).
+ *
+ * :id — id ГРУППЫ чекаута (бэкенд листает и отдаёт группы, см. AGENTS.md «Заказы»);
+ * $order хранит именно группу, имя стора не переименовано ради минимального диффа.
  */
 export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
   const authorizedRoute = userModel.chainAuthorized({
@@ -22,13 +26,14 @@ export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
     effect: createEffect((id: string) => api.orders.findOne(id)),
   });
 
-  const $order = createStore<Order | null>(null)
+  const $order = createStore<OrderGroup | null>(null)
     .on(fetchQuery.finished.done, (_, { result }) => result)
-    // Смена статуса возвращает пересчитанный заказ — кладём его целиком,
-    // без повторного запроса (как profileUpdated/cartReceived в мобилке).
-    .on(ChangeOrderStatus.model.mutated, (_, order) => order);
+    // Смена статуса возвращает пересчитанную группу целиком — кладём её без
+    // повторного запроса (как profileUpdated/cartReceived в мобилке).
+    .on(ChangeOrderStatus.model.mutated, (_, group) => group)
+    .on(ChangeGroupStatus.model.mutated, (_, group) => group);
 
-  const purge = merge([ChangeOrderStatus.model.mutated]);
+  const purge = merge([ChangeOrderStatus.model.mutated, ChangeGroupStatus.model.mutated]);
 
   concurrency(fetchQuery, { strategy: 'TAKE_LATEST' });
   cache(fetchQuery, { staleAfter: 5000, purge });
@@ -43,7 +48,7 @@ export const factory = ({ route }: LazyPageFactoryParams<{ id: string }>) => {
 
   sample({
     clock: authorizedRoute.closed,
-    target: [$order.reinit, ChangeOrderStatus.model.reset],
+    target: [$order.reinit, ChangeOrderStatus.model.reset, ChangeGroupStatus.model.reset],
   });
 
   message({

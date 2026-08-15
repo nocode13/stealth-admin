@@ -93,6 +93,8 @@ export type CatalogItem = {
   unit: string;
   sellerId: string | null;
   status: ReviewStatus;
+  /** Вайтлист бесплатной доставки — ставит только SUPER_ADMIN. */
+  freeDelivery: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -104,6 +106,8 @@ export interface CatalogItemPayload {
   description?: string;
   unit?: string;
   status?: ReviewStatus;
+  /** Только для SUPER_ADMIN — для остальных ролей молча игнорируется на бэкенде. */
+  freeDelivery?: boolean;
 }
 
 export interface FindCatalogParams extends CursorPageParams {
@@ -114,6 +118,21 @@ export interface FindCatalogParams extends CursorPageParams {
   status?: ReviewStatus;
   /** Только для SUPER_ADMIN — SELLER скоупится по видимости на бэкенде. */
   sellerId?: string;
+  /** Только позиции из вайтлиста бесплатной доставки. */
+  freeDelivery?: boolean;
+}
+
+/** Платформенный тариф доставки — синглтон, правит только SUPER_ADMIN. */
+export interface PlatformSettings {
+  /** В тиинах (1 сум = 100 тиинов). */
+  deliveryFee: number;
+  /** В тиинах; `null` — бесплатной доставки по порогу нет. */
+  freeDeliveryThreshold: number | null;
+}
+
+export interface UpdatePlatformSettingsPayload {
+  deliveryFee?: number;
+  freeDeliveryThreshold?: number | null;
 }
 
 export type Listing = {
@@ -218,6 +237,11 @@ export type OrderStatus =
   | 'DELIVERED'
   | 'CANCELLED';
 
+/** Статус группы (чекаута целиком) — как OrderStatus, плюс PARTIALLY_DELIVERED:
+ * часть заказов группы уже доставлена, часть ещё нет. Выводится на бэкенде из
+ * статусов заказов группы, руками не выставляется. */
+export type OrderGroupStatus = OrderStatus | 'PARTIALLY_DELIVERED';
+
 export type PaymentMethod = 'CASH';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'REFUNDED';
 
@@ -238,24 +262,35 @@ export interface OrderStatusHistoryEntry {
   id: string;
   status: OrderStatus;
   comment: string | null;
-  changedByUserId: string | null;
   createdAt: string;
 }
 
-/** Заказ — всегда на одного продавца; общий checkout связывает groupId. */
+/** Заказ — доля одного продавца внутри группы чекаута; общие данные оформления
+ * (контакты, адрес, оплата, доставка, итог) — на корне, см. OrderGroup. */
 export interface Order {
   id: string;
-  groupId: string;
   orderNumber: number;
-  userId: string;
-  sellerId: string;
   seller: { id: string; name: string };
   status: OrderStatus;
-  paymentMethod: PaymentMethod;
-  paymentStatus: PaymentStatus;
+  /** Доля этого продавца. Доставка на заказ не раскладывается — она платформенная,
+   * посчитана один раз и живёт в OrderGroup.deliveryFee/total. */
   itemsTotal: string;
-  deliveryFee: string;
-  total: string;
+  courierName: string | null;
+  courierPhone: string | null;
+  cancelReason: string | null;
+  items: OrderItem[];
+  history: OrderStatusHistoryEntry[];
+  createdAt: string;
+  confirmedAt: string | null;
+  deliveredAt: string | null;
+}
+
+/** Группа чекаута — корень ответа: общие данные оформления (контакты, адрес, оплата,
+ * доставка, итог), одна на весь checkout, и заказы по продавцам внутри неё. */
+export interface OrderGroup {
+  id: string;
+  groupNumber: number;
+  status: OrderGroupStatus;
   contactName: string;
   contactPhone: string;
   deliveryAddress: string;
@@ -263,20 +298,21 @@ export interface Order {
   /** Координаты из Telegram-локации: по ним строится ссылка «Маршрут». */
   deliveryLat: number | null;
   deliveryLng: number | null;
-  courierName: string | null;
-  courierPhone: string | null;
-  cancelReason: string | null;
-  items: OrderItem[];
-  history: OrderStatusHistoryEntry[];
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  itemsTotal: string;
+  deliveryFee: string;
+  total: string;
+  /** Сколько заказов ВИДНО в этом ответе — у SELLER это не то же самое, что общее
+   * число заказов в группе: сервер отдаёт и пересчитывает только его часть. */
+  ordersCount: number;
   createdAt: string;
-  updatedAt: string;
-  confirmedAt: string | null;
-  deliveredAt: string | null;
+  orders: Order[];
 }
 
 export interface FindOrdersParams extends CursorPageParams {
-  status?: OrderStatus;
-  /** Номер заказа, телефон или имя получателя. */
+  status?: OrderGroupStatus;
+  /** Номер группы, номер заказа, телефон или имя получателя. */
   search?: string;
   /** Только для SUPER_ADMIN — SELLER всегда скоупится своим продавцом. */
   sellerId?: string;
