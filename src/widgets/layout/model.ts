@@ -6,6 +6,7 @@ import {
   HomeOutlined,
   AppstoreOutlined,
   BarChartOutlined,
+  SettingOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
   UnorderedListOutlined,
@@ -75,6 +76,13 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
     key: 'metrics',
     icon: BarChartOutlined,
   },
+  {
+    route: routes.settings,
+    label: 'Настройки',
+    roles: ['SUPER_ADMIN'],
+    key: 'settings',
+    icon: SettingOutlined,
+  },
 ];
 
 export const $activeRoutes = combine({
@@ -86,6 +94,7 @@ export const $activeRoutes = combine({
   orders: or(routes.orders.root.$isOpened, routes.orders.order.$isOpened),
   team: routes.team.$isOpened,
   metrics: routes.metrics.$isOpened,
+  settings: routes.settings.$isOpened,
 }).map((routes) =>
   Object.entries(routes)
     .filter(([_, value]) => value)

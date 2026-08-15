@@ -20,6 +20,7 @@ export const schema = z.object({
   description: z.string().optional(),
   unit: z.string().optional(),
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+  freeDelivery: z.boolean().optional(),
 });
 
 export type FormValues = z.infer<typeof schema>;
@@ -30,6 +31,7 @@ export const DEFAULT_VALUES: FormValues = {
   description: '',
   unit: '',
   status: undefined,
+  freeDelivery: false,
 };
 
 export const form = createForm<FormValues>();
@@ -59,13 +61,14 @@ const fetchCategoriesQuery = createQuery({
 });
 
 export const createFx = attach({
-  source: form.$formValues,
-  effect: (values: FormValues) =>
+  source: { values: form.$formValues, role: userModel.$role },
+  effect: ({ values, role }) =>
     api.catalog.create({
       name: values.name,
       categoryId: values.categoryId || undefined,
       description: values.description || undefined,
       unit: values.unit || undefined,
+      freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
     }),
 });
 
@@ -81,6 +84,7 @@ export const updateFx = attach({
       description: values.description || undefined,
       unit: values.unit || undefined,
       status: role === 'SUPER_ADMIN' ? values.status : undefined,
+      freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
     });
   },
 });
@@ -175,6 +179,7 @@ sample({
     description: item.description ?? '',
     unit: item.unit ?? '',
     status: item.status,
+    freeDelivery: item.freeDelivery,
   }),
   target: form.resetFx,
 });

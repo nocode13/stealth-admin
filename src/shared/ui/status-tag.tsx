@@ -17,6 +17,8 @@ const COLOR_BY_STATUS: Record<string, string> = {
   ARRIVED: 'magenta',
   DELIVERED: 'green',
   CANCELLED: 'red',
+  // Статус группы: часть заказов доставлена, часть ещё нет.
+  PARTIALLY_DELIVERED: 'orange',
 };
 
 export const StatusTag = <Status extends string>({

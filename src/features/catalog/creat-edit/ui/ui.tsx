@@ -11,7 +11,7 @@ import { userModel } from '@/entities/user';
 import type { CatalogItemMedia } from '@/shared/api';
 import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
 import { MAX_IMAGE_SIZE } from '@/shared/lib/crop-image';
-import { SelectField, TextAreaField, TextField } from '@/shared/ui/form';
+import { SelectField, SwitchField, TextAreaField, TextField } from '@/shared/ui/form';
 import { ImageCropModal } from '@/shared/ui/image-crop-upload';
 import { CatalogPreview } from '@/shared/ui/marketplace-preview';
 
@@ -159,6 +159,9 @@ export const CatalogItemModal = () => {
         <TextAreaField control={form.control} name="description" label="Описание" />
         {!!editingItem && role === 'SUPER_ADMIN' && (
           <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
+        )}
+        {role === 'SUPER_ADMIN' && (
+          <SwitchField control={form.control} name="freeDelivery" label="Бесплатная доставка" />
         )}
       </form>
       {editingItem ? (

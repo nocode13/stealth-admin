@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- createLazyPage требует из модуля страницы экспорт component + createModel */
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Avatar, Button, Flex, Table, type TableProps } from 'antd';
+import { Avatar, Button, Flex, Table, Tag, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
@@ -90,6 +90,11 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
       title: 'Статус',
       key: 'status',
       render: (_, item) => <StatusTag status={item.status} />,
+    },
+    {
+      title: 'Доставка',
+      key: 'freeDelivery',
+      render: (_, item) => (item.freeDelivery ? <Tag color="green">Бесплатная доставка</Tag> : null),
     },
     {
       title: 'Создано',

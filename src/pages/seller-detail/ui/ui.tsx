@@ -3,10 +3,9 @@ import { Button, Card, Flex, Image, Spin, Table, Typography, type TableProps } f
 import { useUnit } from 'effector-react';
 
 import { SellerStaffTable } from '@/widgets/seller-staff';
-import { ChangeOrderStatus } from '@/features/order/change-status';
 import { SellerCreateEdit } from '@/features/seller/creat-edit';
 import { StatusTag as SellerStatusTag } from '@/entities/seller';
-import { StatusTag as OrderStatusTag, formatMoney, type Order } from '@/entities/order';
+import { GroupStatusTag, formatMoney, type OrderGroup } from '@/entities/order';
 import { StatusTag as CategoryStatusTag, type Category } from '@/entities/category';
 import { StatusTag as CatalogStatusTag, type CatalogItem } from '@/entities/catalog';
 import { StatusTag as ListingStatusTag, type Listing } from '@/entities/listing';
@@ -128,54 +127,51 @@ const Page = ({ model }: LazyPageProps<Model>) => {
       </Card>
 
       <SellerCreateEdit.View />
-      <ChangeOrderStatus.View />
     </Flex>
   );
 };
 
-const useColumns = (): TableProps<Order>['columns'] => {
+const useColumns = (): TableProps<OrderGroup>['columns'] => {
   return [
     {
       title: '№',
-      key: 'orderNumber',
-      render: (_, order) => <Typography.Text strong>#{order.orderNumber}</Typography.Text>,
+      key: 'groupNumber',
+      render: (_, group) => <Typography.Text strong>№{group.groupNumber}</Typography.Text>,
       width: 90,
     },
     {
       title: 'Статус',
       key: 'status',
-      render: (_, order) => <OrderStatusTag status={order.status} />,
+      render: (_, group) => <GroupStatusTag status={group.status} />,
     },
     {
       title: 'Получатель',
       key: 'contact',
-      render: (_, order) => (
+      render: (_, group) => (
         <Flex vertical>
-          <span>{order.contactName}</span>
+          <span>{group.contactName}</span>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {order.contactPhone}
+            {group.contactPhone}
           </Typography.Text>
         </Flex>
       ),
     },
     {
+      // Группа могла зацепить и других продавцов (мультипродавцовый чекаут) —
+      // страница открыта только SUPER_ADMIN, показываем всех участников группы.
+      title: 'Продавцы',
+      key: 'sellers',
+      render: (_, group) => group.orders.map((order) => order.seller.name).join(', '),
+    },
+    {
       title: 'Сумма',
       key: 'total',
-      render: (_, order) => formatMoney(order.total),
+      render: (_, group) => formatMoney(group.total),
     },
     {
       title: 'Создан',
       key: 'createdAt',
-      render: (_, order) => formatDate(order.createdAt),
-    },
-    {
-      key: 'actions',
-      render: (_, order) => (
-        <Button size="small" onClick={() => ChangeOrderStatus.model.triggered(order)}>
-          Статус
-        </Button>
-      ),
-      width: 96,
+      render: (_, group) => formatDate(group.createdAt),
     },
   ];
 };

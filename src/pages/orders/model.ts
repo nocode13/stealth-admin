@@ -2,8 +2,9 @@ import { createEffect, createEvent, createStore, merge, sample } from 'effector'
 import { cache, concurrency, createQuery } from 'effector-refetch';
 import { interval } from 'patronum';
 
+import { ChangeGroupStatus } from '@/features/order/change-group-status';
 import { ChangeOrderStatus } from '@/features/order/change-status';
-import type { Order, OrderStatus } from '@/entities/order';
+import type { OrderGroup, OrderGroupStatus } from '@/entities/order';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
 import { PAGE_SIZE } from '@/shared/config/pagination';
@@ -15,8 +16,9 @@ import { notification } from '@/shared/lib/notification';
 /** Как часто проверяем, не появились ли новые заказы, пока вкладка открыта. */
 const POLL_INTERVAL_MS = 30_000;
 
-/** Фильтр «Активные» — то, что требует действий продавца прямо сейчас. */
-export type StatusFilter = OrderStatus | 'ALL';
+/** Фильтр «Активные» — то, что требует действий продавца прямо сейчас. Фильтруем
+ * по статусу ГРУППЫ — списки и раньше были группами по факту, просто назывались Order. */
+export type StatusFilter = OrderGroupStatus | 'ALL';
 
 /** Курсор здесь же, а не отдельным параметром: фильтр обязан ехать с каждой страницей. */
 type FetchParams = { cursor?: string; status: StatusFilter };
@@ -43,9 +45,11 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
     ),
   });
 
-  const $orders = createStore<Order[]>([]).on(fetchPageQuery.finished.done, (items, { params, result: { data } }) =>
-    // Курсор в параметрах отличает дозагрузку от перезагрузки с нуля (и от тика поллинга).
-    params.cursor ? items.concat(data.items) : data.items,
+  const $orders = createStore<OrderGroup[]>([]).on(
+    fetchPageQuery.finished.done,
+    (items, { params, result: { data } }) =>
+      // Курсор в параметрах отличает дозагрузку от перезагрузки с нуля (и от тика поллинга).
+      params.cursor ? items.concat(data.items) : data.items,
   );
 
   const $nextCursor = createStore<string | null>(null).on(
@@ -54,7 +58,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
   );
 
   // Смена статуса из модалки инвалидирует список — как mutated у категорий.
-  const purge = merge([ChangeOrderStatus.model.mutated, statusChanged]);
+  const purge = merge([ChangeOrderStatus.model.mutated, ChangeGroupStatus.model.mutated, statusChanged]);
 
   fRetry(fetchPageQuery, { times: 2, delay: 300 });
   concurrency(fetchPageQuery, { strategy: 'TAKE_LATEST' });
@@ -83,7 +87,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
 
   sample({
     clock: authorizedRoute.closed,
-    target: [$status.reinit, ChangeOrderStatus.model.reset],
+    target: [$status.reinit, ChangeOrderStatus.model.reset, ChangeGroupStatus.model.reset],
   });
 
   /**
@@ -117,12 +121,12 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
     source: $orders,
     filter: (previous, { params, result: { data } }) => {
       if (params.cursor || previous.length === 0) return false;
-      const known = new Set(previous.map((order) => order.id));
-      return data.items.some((order) => !known.has(order.id));
+      const known = new Set(previous.map((group) => group.id));
+      return data.items.some((group) => !known.has(group.id));
     },
     fn: (previous, { result: { data } }) => {
-      const known = new Set(previous.map((order) => order.id));
-      return data.items.filter((order) => !known.has(order.id)).length;
+      const known = new Set(previous.map((group) => group.id));
+      return data.items.filter((group) => !known.has(group.id)).length;
     },
   });
 
