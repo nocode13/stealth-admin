@@ -16,6 +16,9 @@ export const ListingModal = () => {
     editingListing,
     mutating,
     catalogItemOptions,
+    catalogItemsSearch,
+    catalogItemsFetching,
+    catalogItemsSearchChanged,
     validated,
     closeRequested,
     role,
@@ -28,6 +31,9 @@ export const ListingModal = () => {
     model.$editingListing,
     model.$mutating,
     model.$catalogItemOptions,
+    model.$catalogItemsSearch,
+    model.$catalogItemsFetching,
+    model.catalogItemsSearchChanged,
     model.validated,
     model.reset,
     userModel.$role,
@@ -62,6 +68,13 @@ export const ListingModal = () => {
           label="Товар"
           required
           options={catalogItemOptions.map((item) => ({ value: item.id, label: item.name }))}
+          loading={catalogItemsFetching}
+          showSearch={{
+            searchValue: catalogItemsSearch,
+            onSearch: catalogItemsSearchChanged,
+            filterOption: false,
+            autoClearSearchValue: true,
+          }}
         />
         {/* Продавца выбирает только SUPER_ADMIN и только при создании: у продавца он
             берётся из сессии, а сменить продавца у существующего листинга нельзя. */}

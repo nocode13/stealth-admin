@@ -45,6 +45,7 @@ export const createForCatalogItemTriggered = createEvent<CatalogItem>();
 export const editTriggered = createEvent<Listing>();
 export const reset = createEvent();
 export const validated = createEvent();
+export const catalogItemsSearchChanged = createEvent<string>();
 export const sellersSearchChanged = createEvent<string>();
 
 export const $editingListing = createStore<Listing | null>(null);
@@ -56,26 +57,31 @@ $mode.on([createTriggered, createForCatalogItemTriggered], () => 'create').on(ed
 
 sample({ clock: editTriggered, target: $editingListing });
 
-const catalogItemOptionsFetchedFx = createEffect(() => api.catalog.findAll({ limit: 100 }).then((r) => r.data));
+const $catalogItems = createStore<CatalogItem[]>([]);
+export const $catalogItemsSearch = restore(catalogItemsSearchChanged, '');
 
-// Позиция из цепочки «создали каталог → создаём листинг» может не попасть в первую
-// сотню (список отсортирован по имени) — тогда селект показал бы голый id, поэтому
-// подмешиваем её к опциям вручную.
+// `status: 'APPROVED'` бэкенд применяет только для SUPER_ADMIN — SELLER'у он всегда отдаёт
+// master APPROVED + свои позиции любого статуса, поэтому клиентский фильтр остаётся.
+const fetchCatalogItemsQuery = createQuery({
+  effect: createEffect((search?: string) =>
+    api.catalog.findAll({ limit: 100, status: 'APPROVED', search: search || undefined }),
+  ),
+  cache: { staleAfter: 10_000 },
+  concurrency: 'TAKE_LATEST',
+});
+
+export const $catalogItemsFetching = fetchCatalogItemsQuery.$pending;
+
+// Выбранная позиция может не попасть в текущую выдачу (первая сотня отсортирована по имени,
+// а поиск её ещё и сужает) — тогда селект показал бы голый id, поэтому подмешиваем её
+// к опциям вручную: и товар из цепочки «создали каталог → создаём листинг», и товар
+// редактируемого листинга.
 const withPreselected = (items: CatalogItem[], preselected: CatalogItem | null) =>
   !preselected || items.some((item) => item.id === preselected.id) ? items : [preselected, ...items];
 
-const $preselectedCatalogItem = createStore<CatalogItem | null>(null).on(
-  createForCatalogItemTriggered,
-  (_, item) => item,
-);
+const $preselectedCatalogItem = createStore<CatalogItem | null>(null);
 
-export const $catalogItemOptions = combine(
-  createStore<CatalogItem[]>([]).on(catalogItemOptionsFetchedFx.doneData, (_, page) =>
-    page.items.filter((item) => item.status === 'APPROVED'),
-  ),
-  $preselectedCatalogItem,
-  withPreselected,
-);
+export const $catalogItemOptions = combine($catalogItems, $preselectedCatalogItem, withPreselected);
 
 export const $sellers = createStore<Seller[]>([]);
 export const $sellersSearch = restore(sellersSearchChanged, '');
@@ -94,7 +100,27 @@ export const $sellersFetching = fetchSellersQuery.$pending;
 
 sample({
   clock: opened,
-  target: [catalogItemOptionsFetchedFx, disclosure.opened],
+  fn: () => undefined,
+  target: [fetchCatalogItemsQuery.start, disclosure.opened],
+});
+
+sample({
+  clock: debounce(catalogItemsSearchChanged, 300),
+  target: fetchCatalogItemsQuery.start,
+});
+
+sample({
+  clock: fetchCatalogItemsQuery.finished.done,
+  fn: (res) => res.result.data.items.filter((item) => item.status === 'APPROVED'),
+  target: $catalogItems,
+});
+
+sample({ clock: createForCatalogItemTriggered, target: $preselectedCatalogItem });
+
+sample({
+  clock: editTriggered,
+  fn: (listing) => listing.catalogItem,
+  target: $preselectedCatalogItem,
 });
 
 sample({
@@ -201,6 +227,8 @@ sample({
     form.resetFx.prepend(() => DEFAULT_VALUES),
     $editingListing.reinit,
     $mode.reinit,
+    $catalogItems.reinit,
+    $catalogItemsSearch.reinit,
     $preselectedCatalogItem.reinit,
     $sellers.reinit,
     $sellersSearch.reinit,
