@@ -39,12 +39,15 @@ export interface CursorPageParams {
   limit?: number;
 }
 
+export type Locale = 'RU' | 'UZ' | 'EN';
+
+export type Translation<T> = T & { locale: Locale; auto: boolean };
+
 export type Category = {
   id: string;
-  nameRu: string;
-  nameUz: string | null;
-  nameEn: string | null;
-  nameKaa: string | null;
+  /** Резолвленное имя (для админки всегда RU) — для таблиц и селектов. */
+  name: string;
+  translations: Translation<{ name: string }>[];
   sellerId: string | null;
   status: ReviewStatus;
   createdAt: string;
@@ -52,10 +55,8 @@ export type Category = {
 };
 
 export interface CategoryPayload {
-  nameRu: string;
-  nameUz?: string;
-  nameEn?: string;
-  nameKaa?: string;
+  /** RU обязателен, остальные локали опциональны — пусто = не переведено. */
+  translations: { locale: Locale; name?: string }[];
   status?: ReviewStatus;
 }
 
@@ -84,13 +85,15 @@ export type CatalogItemMedia = {
 
 export type CatalogItem = {
   id: string;
+  /** Резолвленное имя/описание/единица (для админки всегда RU). */
   name: string;
+  description: string | null;
+  unit: string;
+  translations: Translation<{ name: string; description: string | null; unit: string }>[];
   categoryId: string | null;
   category: Category | null;
-  description: string | null;
   /** Фото и видео одной галереей, сквозной порядок по sortOrder. */
   media: CatalogItemMedia[];
-  unit: string;
   sellerId: string | null;
   status: ReviewStatus;
   /** Вайтлист бесплатной доставки — ставит только SUPER_ADMIN. */
@@ -100,11 +103,10 @@ export type CatalogItem = {
 };
 
 export interface CatalogItemPayload {
-  name: string;
+  /** RU обязателен, остальные локали опциональны — пусто = не переведено. */
+  translations: { locale: Locale; name?: string; description?: string; unit?: string }[];
   /** `null` в PATCH снимает категорию; `undefined` — не менять. */
   categoryId?: string | null;
-  description?: string;
-  unit?: string;
   status?: ReviewStatus;
   /** Только для SUPER_ADMIN — для остальных ролей молча игнорируется на бэкенде. */
   freeDelivery?: boolean;
@@ -173,8 +175,10 @@ export interface FindListingsParams extends CursorPageParams {
 
 export type Seller = {
   id: string;
+  /** Резолвленное имя/описание (для админки всегда RU). */
   name: string;
   description: string | null;
+  translations: Translation<{ name: string; description: string | null }>[];
   bannerUrl: string | null;
   status: SellerStatus;
   ownerUserId: string;
@@ -183,16 +187,15 @@ export type Seller = {
 };
 
 export interface CreateSellerPayload {
-  name: string;
-  description?: string;
+  /** RU обязателен, остальные локали опциональны — пусто = не переведено. */
+  translations: { locale: Locale; name?: string; description?: string }[];
   ownerEmail: string;
   ownerPassword: string;
   ownerPhone?: string;
 }
 
 export interface UpdateSellerPayload {
-  name?: string;
-  description?: string;
+  translations?: { locale: Locale; name?: string; description?: string }[];
   status?: SellerStatus;
 }
 

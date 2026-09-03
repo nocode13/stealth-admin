@@ -20,7 +20,7 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
   const statusOptions = catalogConfig.useStatusOptions();
   const categoryOptions = [
     { label: 'Без категории', value: model.NO_CATEGORY },
-    ...categories.map((category) => ({ label: category.nameRu, value: category.id })),
+    ...categories.map((category) => ({ label: category.name, value: category.id })),
   ];
 
   return (

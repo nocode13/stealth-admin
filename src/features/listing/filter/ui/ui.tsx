@@ -44,7 +44,7 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   const isSuperAdmin = role === 'SUPER_ADMIN';
   const statusOptions = listingConfig.useStatusOptions();
-  const categoryOptions = categories.map((category) => ({ label: category.nameRu, value: category.id }));
+  const categoryOptions = categories.map((category) => ({ label: category.name, value: category.id }));
   const sellerOptions = sellers.map((seller) => ({ label: seller.name, value: seller.id }));
 
   return (

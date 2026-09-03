@@ -41,8 +41,12 @@ export const SellerModal = () => {
       destroyOnHidden
     >
       <form onSubmit={form.handleSubmit(() => model.validated())} id={formId}>
-        <TextField control={form.control} name="name" label="Название" required />
-        <TextAreaField control={form.control} name="description" label="Описание" />
+        <TextField control={form.control} name="nameRu" label="Название (RU)" required />
+        <TextField control={form.control} name="nameUz" label="Название (UZ)" />
+        <TextField control={form.control} name="nameEn" label="Название (EN)" />
+        <TextAreaField control={form.control} name="descriptionRu" label="Описание (RU)" />
+        <TextAreaField control={form.control} name="descriptionUz" label="Описание (UZ)" />
+        <TextAreaField control={form.control} name="descriptionEn" label="Описание (EN)" />
         {!editingSeller && (
           <>
             <TextField control={form.control} name="ownerEmail" label="Email владельца" required />
@@ -66,8 +70,8 @@ export const SellerModal = () => {
               src={src}
               natural={natural}
               area={area}
-              name={form.watch('name') || editingSeller.name}
-              description={form.watch('description') || editingSeller.description || undefined}
+              name={form.watch('nameRu') || editingSeller.name}
+              description={form.watch('descriptionRu') || editingSeller.description || undefined}
             />
           )}
         />

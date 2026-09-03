@@ -75,7 +75,7 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
     {
       title: 'Категория',
       key: 'category',
-      render: (_, item) => item.category?.nameRu ?? '—',
+      render: (_, item) => item.category?.name ?? '—',
     },
     {
       title: 'Ед. изм.',
