@@ -59,21 +59,21 @@ const useColumns = (_: Model): TableProps<Category>['columns'] => {
   return [
     {
       title: 'Название',
-      dataIndex: 'nameRu',
+      dataIndex: 'name',
     },
     {
       title: 'Переводы',
       key: 'translations',
       render: (_, category) => {
-        const translations = [
-          category.nameUz && `UZ: ${category.nameUz}`,
-          category.nameEn && `EN: ${category.nameEn}`,
-          category.nameKaa && `KAA: ${category.nameKaa}`,
-        ].filter(Boolean);
+        // auto: true — перевод не задан (значение скопировано из RU), показываем «—».
+        const label = (locale: 'UZ' | 'EN') => {
+          const t = category.translations.find((t) => t.locale === locale);
+          return `${locale}: ${t && !t.auto ? t.name : '—'}`;
+        };
 
         return (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {translations.join(', ')}
+            {[label('UZ'), label('EN')].join(', ')}
           </Typography.Text>
         );
       },
