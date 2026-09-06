@@ -137,6 +137,23 @@ export interface UpdatePlatformSettingsPayload {
   freeDeliveryThreshold?: number | null;
 }
 
+export type AppPlatform = 'IOS' | 'ANDROID';
+
+/** Версия приложения в сторе — по строке на платформу. */
+export interface AppVersion {
+  platform: AppPlatform;
+  latestVersion: string;
+  minSupportedVersion: string;
+  storeUrl: string;
+  releaseNotesRu: string | null;
+  releaseNotesUz: string | null;
+  releaseNotesEn: string | null;
+  enabled: boolean;
+  updatedAt: string;
+}
+
+export type UpdateAppVersionPayload = Partial<Omit<AppVersion, 'platform' | 'updatedAt'>>;
+
 export type Listing = {
   id: string;
   sellerId: string;

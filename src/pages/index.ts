@@ -13,6 +13,7 @@ import { Orders } from './orders';
 import { Sellers } from './sellers';
 import { SellerDetail } from './seller-detail';
 import { Settings } from './settings';
+import { AppVersions } from './app-versions';
 import { Team } from './team';
 
 export const Pages = createRoutesView({
@@ -29,6 +30,7 @@ export const Pages = createRoutesView({
     Team,
     Metrics,
     Settings,
+    AppVersions,
     NotFound,
     Forbidden,
   ],

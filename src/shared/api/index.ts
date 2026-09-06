@@ -1,3 +1,4 @@
+import { appVersions } from './app-versions';
 import { auth } from './auth';
 import { catalog } from './catalog';
 import { category } from './category';
@@ -8,6 +9,8 @@ import { sellers } from './sellers';
 import { settings } from './settings';
 
 export type {
+  AppPlatform,
+  AppVersion,
   BotLinkSession,
   CatalogItem,
   CatalogItemMedia,
@@ -42,6 +45,7 @@ export type {
   SellerStaff,
   SellerStaffPayload,
   SellerStatus,
+  UpdateAppVersionPayload,
   UpdateOrderCourierPayload,
   UpdatePlatformSettingsPayload,
   User,
@@ -49,4 +53,4 @@ export type {
 export { getApiErrorMessage } from './error';
 export { base } from './instances';
 
-export const api = { auth, category, catalog, listing, metrics, orders, sellers, settings };
+export const api = { appVersions, auth, category, catalog, listing, metrics, orders, sellers, settings };
