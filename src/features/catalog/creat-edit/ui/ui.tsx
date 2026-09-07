@@ -140,13 +140,15 @@ export const CatalogItemModal = () => {
       destroyOnHidden
     >
       <form onSubmit={form.handleSubmit(() => validated())} id={formId}>
-        <TextField control={form.control} name="name" label="Название" required />
+        <TextField control={form.control} name="nameRu" label="Название (RU)" required />
+        <TextField control={form.control} name="nameUz" label="Название (UZ)" />
+        <TextField control={form.control} name="nameEn" label="Название (EN)" />
         <SelectField
           control={form.control}
           name="categoryId"
           label="Категория"
           allowClear
-          options={categoryOptions.map((category) => ({ value: category.id, label: category.nameRu }))}
+          options={categoryOptions.map((category) => ({ value: category.id, label: category.name }))}
           loading={categoriesFetching}
           showSearch={{
             searchValue: categoriesSearch,
@@ -155,8 +157,12 @@ export const CatalogItemModal = () => {
             autoClearSearchValue: true,
           }}
         />
-        <TextField control={form.control} name="unit" label="Единица измерения" />
-        <TextAreaField control={form.control} name="description" label="Описание" />
+        <TextField control={form.control} name="unitRu" label="Единица измерения (RU)" />
+        <TextField control={form.control} name="unitUz" label="Единица измерения (UZ)" />
+        <TextField control={form.control} name="unitEn" label="Единица измерения (EN)" />
+        <TextAreaField control={form.control} name="descriptionRu" label="Описание (RU)" />
+        <TextAreaField control={form.control} name="descriptionUz" label="Описание (UZ)" />
+        <TextAreaField control={form.control} name="descriptionEn" label="Описание (EN)" />
         {!!editingItem && role === 'SUPER_ADMIN' && (
           <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
         )}
@@ -246,8 +252,8 @@ export const CatalogItemModal = () => {
                 src={src}
                 natural={natural}
                 area={area}
-                name={form.watch('name') || editingItem.name}
-                category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.nameRu}
+                name={form.watch('nameRu') || editingItem.name}
+                category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.name}
               />
             )}
           />

@@ -178,7 +178,7 @@ const useColumns = (): TableProps<OrderGroup>['columns'] => {
 
 const useCategoryColumns = (): TableProps<Category>['columns'] => {
   return [
-    { title: 'Название', dataIndex: 'nameRu' },
+    { title: 'Название', dataIndex: 'name' },
     {
       title: 'Статус',
       key: 'status',
@@ -195,7 +195,7 @@ const useCategoryColumns = (): TableProps<Category>['columns'] => {
 const useCatalogColumns = (): TableProps<CatalogItem>['columns'] => {
   return [
     { title: 'Название', dataIndex: 'name' },
-    { title: 'Категория', key: 'category', render: (_, item) => item.category?.nameRu ?? '—' },
+    { title: 'Категория', key: 'category', render: (_, item) => item.category?.name ?? '—' },
     {
       title: 'Статус',
       key: 'status',

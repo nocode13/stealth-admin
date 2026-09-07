@@ -10,8 +10,12 @@ import { createForm } from '@/shared/lib/form';
 import { message } from '@/shared/lib/message';
 
 export const schema = z.object({
-  name: z.string().min(2, 'Минимум 2 символа'),
-  description: z.string().optional(),
+  nameRu: z.string().min(2, 'Минимум 2 символа'),
+  nameUz: z.string().optional(),
+  nameEn: z.string().optional(),
+  descriptionRu: z.string().optional(),
+  descriptionUz: z.string().optional(),
+  descriptionEn: z.string().optional(),
   ownerEmail: z.union([z.literal(''), z.email('Некорректный email')]).optional(),
   ownerPassword: z.string().optional(),
   ownerPhone: z.string().optional(),
@@ -21,13 +25,24 @@ export const schema = z.object({
 export type FormValues = z.infer<typeof schema>;
 
 export const DEFAULT_VALUES: FormValues = {
-  name: '',
-  description: '',
+  nameRu: '',
+  nameUz: '',
+  nameEn: '',
+  descriptionRu: '',
+  descriptionUz: '',
+  descriptionEn: '',
   ownerEmail: '',
   ownerPassword: '',
   ownerPhone: '',
   status: undefined,
 };
+
+/** Пустая строка = не переведено, бэкенд сам подставит RU и пометит auto: true. */
+const toTranslations = (values: FormValues) => [
+  { locale: 'RU' as const, name: values.nameRu, description: values.descriptionRu || undefined },
+  { locale: 'UZ' as const, name: values.nameUz || undefined, description: values.descriptionUz || undefined },
+  { locale: 'EN' as const, name: values.nameEn || undefined, description: values.descriptionEn || undefined },
+];
 
 export const form = createForm<FormValues>();
 
@@ -45,16 +60,31 @@ $mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
 
 sample({ clock: [createTriggered, editTriggered], target: disclosure.opened });
 
+/** auto: true → перевод не задан (значение — копия RU), поле рисуем пустым. */
+const pickTranslation = (seller: Seller, locale: 'RU' | 'UZ' | 'EN') => {
+  const t = seller.translations.find((t) => t.locale === locale);
+  return t && !t.auto ? t : null;
+};
+
 sample({
   clock: editTriggered,
-  fn: (seller): FormValues => ({
-    name: seller.name,
-    description: seller.description ?? '',
-    ownerEmail: '',
-    ownerPassword: '',
-    ownerPhone: '',
-    status: seller.status,
-  }),
+  fn: (seller): FormValues => {
+    const ru = seller.translations.find((t) => t.locale === 'RU');
+    const uz = pickTranslation(seller, 'UZ');
+    const en = pickTranslation(seller, 'EN');
+    return {
+      nameRu: ru?.name ?? '',
+      nameUz: uz?.name ?? '',
+      nameEn: en?.name ?? '',
+      descriptionRu: ru?.description ?? '',
+      descriptionUz: uz?.description ?? '',
+      descriptionEn: en?.description ?? '',
+      ownerEmail: '',
+      ownerPassword: '',
+      ownerPhone: '',
+      status: seller.status,
+    };
+  },
   target: form.resetFx,
 });
 
@@ -65,8 +95,7 @@ export const createFx = attach({
       throw new Error('Укажите email и пароль владельца');
     }
     return api.sellers.create({
-      name: values.name,
-      description: values.description || undefined,
+      translations: toTranslations(values),
       ownerEmail: values.ownerEmail,
       ownerPassword: values.ownerPassword,
       ownerPhone: values.ownerPhone || undefined,
@@ -79,8 +108,7 @@ export const updateFx = attach({
   effect: ({ values, editing, role }) => {
     if (!editing) throw new Error('No seller');
     return api.sellers.update(editing.id, {
-      name: values.name,
-      description: values.description || undefined,
+      translations: toTranslations(values),
       status: role === 'SUPER_ADMIN' ? values.status : undefined,
     });
   },

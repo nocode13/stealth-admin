@@ -13,7 +13,6 @@ export const schema = z.object({
   nameRu: z.string().min(2, 'Минимум 2 символа'),
   nameUz: z.string().optional(),
   nameEn: z.string().optional(),
-  nameKaa: z.string().optional(),
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
 });
 
@@ -23,9 +22,15 @@ export const DEFAULT_VALUES: FormValues = {
   nameRu: '',
   nameUz: '',
   nameEn: '',
-  nameKaa: '',
   status: undefined,
 };
+
+/** Пустая строка = не переведено, бэкенд сам подставит RU и пометит auto: true. */
+const toTranslations = (values: FormValues) => [
+  { locale: 'RU' as const, name: values.nameRu },
+  { locale: 'UZ' as const, name: values.nameUz || undefined },
+  { locale: 'EN' as const, name: values.nameEn || undefined },
+];
 
 export const form = createForm<FormValues>();
 
@@ -45,13 +50,7 @@ sample({ clock: editTriggered, target: $editingCategory });
 
 export const createFx = attach({
   source: form.$formValues,
-  effect: (values: FormValues) =>
-    api.category.create({
-      nameRu: values.nameRu,
-      nameUz: values.nameUz || undefined,
-      nameEn: values.nameEn || undefined,
-      nameKaa: values.nameKaa || undefined,
-    }),
+  effect: (values: FormValues) => api.category.create({ translations: toTranslations(values) }),
 });
 
 export const updateFx = attach({
@@ -60,7 +59,10 @@ export const updateFx = attach({
     if (!editing || !role) {
       throw new Error('No category or role');
     }
-    return api.category.update(editing.id, { ...values, status: role === 'SUPER_ADMIN' ? values.status : undefined });
+    return api.category.update(editing.id, {
+      translations: toTranslations(values),
+      status: role === 'SUPER_ADMIN' ? values.status : undefined,
+    });
   },
 });
 
@@ -72,13 +74,18 @@ sample({
   target: disclosure.opened,
 });
 
+/** auto: true → перевод не задан (значение — копия RU), поле рисуем пустым. */
+const pickTranslation = (category: Category, locale: 'RU' | 'UZ' | 'EN') => {
+  const t = category.translations.find((t) => t.locale === locale);
+  return t && !t.auto ? t.name : '';
+};
+
 sample({
   clock: editTriggered,
   fn: (category): FormValues => ({
-    nameRu: category.nameRu,
-    nameUz: category.nameUz ?? '',
-    nameEn: category.nameEn ?? '',
-    nameKaa: category.nameKaa ?? '',
+    nameRu: pickTranslation(category, 'RU'),
+    nameUz: pickTranslation(category, 'UZ'),
+    nameEn: pickTranslation(category, 'EN'),
     status: category.status,
   }),
   target: form.resetFx,
