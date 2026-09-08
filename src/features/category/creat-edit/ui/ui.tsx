@@ -42,7 +42,6 @@ export const CategoryModal = () => {
         <TextField control={form.control} name="nameRu" label="Название (RU)" required />
         <TextField control={form.control} name="nameUz" label="Название (UZ)" />
         <TextField control={form.control} name="nameEn" label="Название (EN)" />
-        <TextField control={form.control} name="nameKaa" label="Название (KAA)" />
         {!!editingCategory && role === 'SUPER_ADMIN' && (
           <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
         )}

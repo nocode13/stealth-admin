@@ -32,6 +32,8 @@ export const routes = {
 
   settings: createRoute(),
 
+  appVersions: createRoute(),
+
   notFound: createRoute(),
   forbidden: createRoute(),
 };
@@ -59,6 +61,7 @@ export const routesMap = [
   { route: routes.metrics, path: '/metrics' },
 
   { route: routes.settings, path: '/settings' },
+  { route: routes.appVersions, path: '/app-versions' },
 
   { route: routes.forbidden, path: '/forbidden' },
 ];

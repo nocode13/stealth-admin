@@ -15,10 +15,16 @@ import { message } from '@/shared/lib/message';
 export const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
 export const schema = z.object({
-  name: z.string().min(2, 'Минимум 2 символа'),
+  nameRu: z.string().min(2, 'Минимум 2 символа'),
+  nameUz: z.string().optional(),
+  nameEn: z.string().optional(),
   categoryId: z.string().optional(),
-  description: z.string().optional(),
-  unit: z.string().optional(),
+  descriptionRu: z.string().optional(),
+  descriptionUz: z.string().optional(),
+  descriptionEn: z.string().optional(),
+  unitRu: z.string().optional(),
+  unitUz: z.string().optional(),
+  unitEn: z.string().optional(),
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
   freeDelivery: z.boolean().optional(),
 });
@@ -26,13 +32,41 @@ export const schema = z.object({
 export type FormValues = z.infer<typeof schema>;
 
 export const DEFAULT_VALUES: FormValues = {
-  name: '',
+  nameRu: '',
+  nameUz: '',
+  nameEn: '',
   categoryId: '',
-  description: '',
-  unit: '',
+  descriptionRu: '',
+  descriptionUz: '',
+  descriptionEn: '',
+  unitRu: '',
+  unitUz: '',
+  unitEn: '',
   status: undefined,
   freeDelivery: false,
 };
+
+/** Пустая строка = не переведено, бэкенд сам подставит RU и пометит auto: true. */
+const toTranslations = (values: FormValues) => [
+  {
+    locale: 'RU' as const,
+    name: values.nameRu,
+    description: values.descriptionRu || undefined,
+    unit: values.unitRu || undefined,
+  },
+  {
+    locale: 'UZ' as const,
+    name: values.nameUz || undefined,
+    description: values.descriptionUz || undefined,
+    unit: values.unitUz || undefined,
+  },
+  {
+    locale: 'EN' as const,
+    name: values.nameEn || undefined,
+    description: values.descriptionEn || undefined,
+    unit: values.unitEn || undefined,
+  },
+];
 
 export const form = createForm<FormValues>();
 
@@ -64,10 +98,8 @@ export const createFx = attach({
   source: { values: form.$formValues, role: userModel.$role },
   effect: ({ values, role }) =>
     api.catalog.create({
-      name: values.name,
+      translations: toTranslations(values),
       categoryId: values.categoryId || undefined,
-      description: values.description || undefined,
-      unit: values.unit || undefined,
       freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
     }),
 });
@@ -77,12 +109,10 @@ export const updateFx = attach({
   effect: ({ values, editing, role }) => {
     if (!editing) throw new Error('No catalog item');
     return api.catalog.update(editing.id, {
-      name: values.name,
+      translations: toTranslations(values),
       // Именно null, а не undefined: undefined в PATCH означает «не менять»,
       // и очистка селекта не доехала бы до бэкенда.
       categoryId: values.categoryId || null,
-      description: values.description || undefined,
-      unit: values.unit || undefined,
       status: role === 'SUPER_ADMIN' ? values.status : undefined,
       freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
     });
@@ -171,16 +201,31 @@ sample({
   target: fetchCategoriesQuery.start,
 });
 
+/** auto: true → перевод не задан (значение — копия RU), поле рисуем пустым. */
+const pickTranslation = (item: CatalogItem, locale: 'RU' | 'UZ' | 'EN') =>
+  item.translations.find((t) => t.locale === locale);
+
 sample({
   clock: editTriggered,
-  fn: (item): FormValues => ({
-    name: item.name,
-    categoryId: item.categoryId ?? '',
-    description: item.description ?? '',
-    unit: item.unit ?? '',
-    status: item.status,
-    freeDelivery: item.freeDelivery,
-  }),
+  fn: (item): FormValues => {
+    const ru = pickTranslation(item, 'RU');
+    const uz = pickTranslation(item, 'UZ');
+    const en = pickTranslation(item, 'EN');
+    return {
+      nameRu: ru?.name ?? '',
+      nameUz: uz && !uz.auto ? uz.name : '',
+      nameEn: en && !en.auto ? en.name : '',
+      categoryId: item.categoryId ?? '',
+      descriptionRu: ru?.description ?? '',
+      descriptionUz: uz && !uz.auto ? (uz.description ?? '') : '',
+      descriptionEn: en && !en.auto ? (en.description ?? '') : '',
+      unitRu: ru?.unit ?? '',
+      unitUz: uz && !uz.auto ? uz.unit : '',
+      unitEn: en && !en.auto ? en.unit : '',
+      status: item.status,
+      freeDelivery: item.freeDelivery,
+    };
+  },
   target: form.resetFx,
 });
 
