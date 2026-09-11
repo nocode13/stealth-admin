@@ -7,7 +7,8 @@ import { useId } from 'react';
 import { sellerConfig } from '@/entities/seller';
 import { userModel } from '@/entities/user';
 import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
-import { SelectField, TextAreaField, TextField } from '@/shared/ui/form';
+import { htmlToText } from '@/shared/lib/html';
+import { RichTextField, SelectField, TextField } from '@/shared/ui/form';
 import { ImageCropUpload } from '@/shared/ui/image-crop-upload';
 import { SellerBannerPreview } from '@/shared/ui/marketplace-preview';
 
@@ -44,9 +45,9 @@ export const SellerModal = () => {
         <TextField control={form.control} name="nameRu" label="Название (RU)" required />
         <TextField control={form.control} name="nameUz" label="Название (UZ)" />
         <TextField control={form.control} name="nameEn" label="Название (EN)" />
-        <TextAreaField control={form.control} name="descriptionRu" label="Описание (RU)" />
-        <TextAreaField control={form.control} name="descriptionUz" label="Описание (UZ)" />
-        <TextAreaField control={form.control} name="descriptionEn" label="Описание (EN)" />
+        <RichTextField control={form.control} name="descriptionRu" label="Описание (RU)" />
+        <RichTextField control={form.control} name="descriptionUz" label="Описание (UZ)" />
+        <RichTextField control={form.control} name="descriptionEn" label="Описание (EN)" />
         {!editingSeller && (
           <>
             <TextField control={form.control} name="ownerEmail" label="Email владельца" required />
@@ -71,7 +72,7 @@ export const SellerModal = () => {
               natural={natural}
               area={area}
               name={form.watch('nameRu') || editingSeller.name}
-              description={form.watch('descriptionRu') || editingSeller.description || undefined}
+              description={htmlToText(form.watch('descriptionRu') || editingSeller.description) || undefined}
             />
           )}
         />

@@ -14,6 +14,10 @@
   "dependencies": {
     "@ant-design/icons": "^6.3.2",
     "@hookform/resolvers": "^5.4.0",
+    "@tiptap/extensions": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/react": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
     "antd": "^6.5.0",
     "atomic-router": "^0.12.0",
     "atomic-router-react": "^0.12.1",

@@ -18,6 +18,10 @@ export default defineConfig({
           if (id.includes('node_modules/antd') || id.includes('node_modules/@ant-design')) {
             return 'antd';
           }
+          // Редактор HTML-описаний нужен только в модалках каталога/продавца.
+          if (id.includes('node_modules/@tiptap') || id.includes('node_modules/prosemirror')) {
+            return 'tiptap';
+          }
         },
       },
     },

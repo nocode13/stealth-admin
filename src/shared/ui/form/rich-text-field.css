@@ -1,0 +1,27 @@
+/* Рамка и фокус как у antd Input: цвета приходят CSS-переменными из theme.useToken() (rich-text-field.tsx). */
+.rich-text-field {
+  overflow: hidden;
+  border: 1px solid var(--rich-text-field-border);
+  transition: border-color 0.2s;
+}
+
+.rich-text-field:focus-within {
+  border-color: var(--rich-text-field-border-focus);
+}
+
+.rich-text-field .ProseMirror {
+  min-height: 96px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px 11px;
+  outline: none;
+}
+
+/* Placeholder-расширение tiptap помечает пустой первый абзац и кладёт текст в data-placeholder. */
+.rich-text-field .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--rich-text-field-placeholder);
+}

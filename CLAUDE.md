@@ -44,9 +44,11 @@ src/
               index.ts (export const api = { ... })
     lib/      form.ts (мост react-hook-form ↔ effector), create-lazy-page.tsx,
               message.ts и notification.ts (effector-операторы antd), disclosure.ts,
-              f-retry.ts, format.ts, options-factory.ts, text-factory.ts и number-factory.ts
+              f-retry.ts, format.ts, html.ts (`htmlToText` — превью HTML-описаний),
+              options-factory.ts, text-factory.ts и number-factory.ts
               (генерик-фабрики значения фильтра — см. «Фильтры на списочных страницах» ниже)
-    ui/       form/ (text-field, textarea-field, select-field), status-tag.tsx, with-suspense, with-title
+    ui/       form/ (text-field, textarea-field, rich-text-field, select-field), rich-text/ (RichTextView +
+              общая типографика HTML-описаний), status-tag.tsx, with-suspense, with-title
     config/   routing.ts (router + routes), pagination.ts (PAGE_SIZE), env.ts, system.ts
 ```
 
@@ -54,8 +56,9 @@ src/
 - zod-схема живёт рядом с `model.ts` фичи; тип формы = `z.infer<typeof schema>` как `FormValues`.
 - resolver — `standardSchemaResolver` из `@hookform/resolvers/standard-schema` (НЕ `zodResolver`);
   импорт zod — `import { z } from 'zod/v4'`, использовать `z.email()`.
-- переиспользуемые контролы форм — в `shared/ui/form/` (`TextField`, `TextAreaField`, `NumberField`,
-  `SelectField`, `SwitchField`); многострочные поля (`description` и т.п.) — всегда `TextAreaField`,
+- переиспользуемые контролы форм — в `shared/ui/form/` (`TextField`, `TextAreaField`, `RichTextField`,
+  `NumberField`, `SelectField`, `SwitchField`); описания каталога и продавца (`description*`, HTML) —
+  всегда `RichTextField` (см. «Описания — HTML» ниже), прочие многострочные поля — `TextAreaField`,
   числовые (`price`, `stock` и т.п.) — всегда `NumberField` (antd `InputNumber`), однострочный
   `TextField` для них не используем, булевы (`freeDelivery` у каталога) — `SwitchField` (antd `Switch`).
 - у каждого контрола в `shared/ui/form/` есть проп `required` (просто рисует красную `*` рядом
@@ -184,6 +187,14 @@ SELLER получает только группы, где участвует, и
   настоящий перевод. Списки (`pages/categories` и т.п.) читают резолвленное `name`, колонка
   «Переводы» в `pages/categories` показывает UZ/EN (или «—» при `auto: true`). Админка
   намеренно **не** шлёт `Accept-Language` — бэкенд для `admin/*` всегда резолвит на RU.
+- **Описания — HTML.** `description*` у каталога и продавца редактируются `RichTextField`
+  (`shared/ui/form/rich-text-field.tsx`, tiptap v3: StarterKit без ссылок/кода/hr, заголовки только
+  H2/H3; картинок и видео нет — вставить их из буфера нельзя, схема ProseMirror их выбрасывает).
+  Пустой редактор отдаёт в форму `''`, а не `<p></p>` — на пустую строку завязаны `toTranslations`
+  и фолбэк `auto: true`. Бэкенд санитизирует HTML по allowlist (`stealth-backend/src/common/rich-text.ts`)
+  и отдаёт как есть; показ — `RichTextView` (`shared/ui/rich-text`, `dangerouslySetInnerHTML` поверх
+  уже чистого HTML), текстовое превью (баннер продавца) — `htmlToText` (`shared/lib/html.ts`).
+  Tiptap/ProseMirror вынесены в свой чанк в `vite.config.ts`, как antd.
 - **Категория** (`features/category/creat-edit`) — самый простой create/edit (только строковые
   поля + `status`, без картинки/числовых полей), но структурно приведён к тому же эталону, что и
   каталог/листинг/продавец: `$editingCategory`/`$mode` — голые сторы + `sample({ clock: editTriggered,
