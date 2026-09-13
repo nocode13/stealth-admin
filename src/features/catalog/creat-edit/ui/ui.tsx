@@ -11,7 +11,7 @@ import { userModel } from '@/entities/user';
 import type { CatalogItemMedia } from '@/shared/api';
 import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
 import { MAX_IMAGE_SIZE } from '@/shared/lib/crop-image';
-import { SelectField, SwitchField, TextAreaField, TextField } from '@/shared/ui/form';
+import { RichTextField, SelectField, SwitchField, TextField } from '@/shared/ui/form';
 import { ImageCropModal } from '@/shared/ui/image-crop-upload';
 import { CatalogPreview } from '@/shared/ui/marketplace-preview';
 
@@ -160,9 +160,9 @@ export const CatalogItemModal = () => {
         <TextField control={form.control} name="unitRu" label="Единица измерения (RU)" />
         <TextField control={form.control} name="unitUz" label="Единица измерения (UZ)" />
         <TextField control={form.control} name="unitEn" label="Единица измерения (EN)" />
-        <TextAreaField control={form.control} name="descriptionRu" label="Описание (RU)" />
-        <TextAreaField control={form.control} name="descriptionUz" label="Описание (UZ)" />
-        <TextAreaField control={form.control} name="descriptionEn" label="Описание (EN)" />
+        <RichTextField control={form.control} name="descriptionRu" label="Описание (RU)" />
+        <RichTextField control={form.control} name="descriptionUz" label="Описание (UZ)" />
+        <RichTextField control={form.control} name="descriptionEn" label="Описание (EN)" />
         {!!editingItem && role === 'SUPER_ADMIN' && (
           <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
         )}
