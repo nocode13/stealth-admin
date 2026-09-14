@@ -12,6 +12,7 @@ import { StatusTag as ListingStatusTag, type Listing } from '@/entities/listing'
 import { routes } from '@/shared/config/routing';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate } from '@/shared/lib/format';
+import { RichTextView } from '@/shared/ui/rich-text';
 import { withTitle } from '@/shared/ui/with-title';
 
 import { factory } from '../model';
@@ -75,7 +76,7 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         </Flex>
         {!!seller.description && (
           <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
-            {seller.description}
+            <RichTextView html={seller.description} />
           </Typography.Paragraph>
         )}
       </Card>
