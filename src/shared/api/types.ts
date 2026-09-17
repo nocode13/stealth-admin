@@ -50,6 +50,8 @@ export type Category = {
   translations: Translation<{ name: string }>[];
   sellerId: string | null;
   status: ReviewStatus;
+  /** Сколько позиций каталога привязано к категории (считает бэкенд, без учёта видимости). */
+  itemsCount: number;
   createdAt: string;
   updatedAt: string;
 };

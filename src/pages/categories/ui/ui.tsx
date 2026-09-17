@@ -84,6 +84,12 @@ const useColumns = (_: Model): TableProps<Category>['columns'] => {
       render: (_, category) => (category.sellerId ? 'Продавец' : 'Мастер'),
     },
     {
+      title: 'Позиции каталога',
+      key: 'itemsCount',
+      render: (_, category) => category.itemsCount,
+      width: 140,
+    },
+    {
       title: 'Статус',
       key: 'status',
       render: (_, category) => <StatusTag status={category.status} />,

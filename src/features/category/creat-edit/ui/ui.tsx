@@ -9,6 +9,7 @@ import { userModel } from '@/entities/user';
 import { SelectField, TextField } from '@/shared/ui/form';
 
 import * as model from '../model';
+import { CategoryItems } from './items';
 
 export const CategoryModal = () => {
   const [isOpen, editingCategory, mutating, validated, closeRequested, role] = useUnit([
@@ -36,6 +37,7 @@ export const CategoryModal = () => {
       onCancel={() => closeRequested()}
       okButtonProps={{ htmlType: 'submit', form: formId }}
       confirmLoading={mutating}
+      width={720}
       destroyOnHidden
     >
       <form onSubmit={form.handleSubmit(() => validated())} id={formId}>
@@ -46,6 +48,7 @@ export const CategoryModal = () => {
           <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
         )}
       </form>
+      {!!editingCategory && <CategoryItems />}
     </Modal>
   );
 };
