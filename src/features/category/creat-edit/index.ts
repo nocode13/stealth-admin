@@ -1,5 +1,6 @@
 import { CategoryModal } from './ui';
 import { editTriggered, createTriggered, reset, mutated } from './model';
+import { itemDetached } from './items';
 
 export const CategoryCreateEdit = {
   View: CategoryModal,
@@ -8,5 +9,6 @@ export const CategoryCreateEdit = {
     createTriggered,
     reset,
     mutated,
+    itemDetached,
   },
 };

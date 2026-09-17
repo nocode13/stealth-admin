@@ -3,7 +3,6 @@ import { createQuery } from 'effector-refetch';
 import { spread } from 'patronum';
 
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
-import { CatalogDelete } from '@/features/catalog/delete';
 import { CatalogFilters } from '@/features/catalog/filter';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import type { CatalogItem } from '@/entities/catalog';
@@ -22,7 +21,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
   const $catalog = createStore<CatalogItem[]>([]);
   const $nextCursor = createStore<string | null>(null);
 
-  const purge = merge([CatalogCreateEdit.model.mutated, CatalogDelete.model.mutated]);
+  const purge = merge([CatalogCreateEdit.model.mutated]);
 
   const fetchPageQuery = createQuery({
     effect: createEffect(

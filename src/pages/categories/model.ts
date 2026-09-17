@@ -20,7 +20,8 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
   const $categories = createStore<Category[]>([]);
   const $nextCursor = createStore<string | null>(null);
 
-  const purge = merge([CategoryCreateEdit.model.mutated]);
+  // Отвязка позиции меняет itemsCount — перезапрашиваем список, не закрывая модалку.
+  const purge = merge([CategoryCreateEdit.model.mutated, CategoryCreateEdit.model.itemDetached]);
 
   const fetchPageQuery = createQuery({
     effect: createEffect(

@@ -4,7 +4,6 @@ import { Avatar, Button, Flex, Table, Tag, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
-import { CatalogDelete } from '@/features/catalog/delete';
 import { CatalogFilters } from '@/features/catalog/filter';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { StatusTag, type CatalogItem } from '@/entities/catalog';
@@ -105,12 +104,9 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
       key: 'actions',
       render: (_, item) =>
         (role === 'SUPER_ADMIN' || !!item.sellerId) && (
-          <Flex gap="small">
-            <Button size="small" icon={<EditOutlined />} onClick={() => CatalogCreateEdit.model.editTriggered(item)} />
-            <CatalogDelete.View item={item} />
-          </Flex>
+          <Button size="small" icon={<EditOutlined />} onClick={() => CatalogCreateEdit.model.editTriggered(item)} />
         ),
-      width: 90,
+      width: 57,
     },
   ];
 };

@@ -192,7 +192,9 @@ sample({ clock: refreshTriggered, target: refetchItemFx });
 
 sample({
   clock: fetchCategoriesQuery.finished.done,
-  fn: (res) => res.result.data.items,
+  // Параметр status бэкенд применяет только для SUPER_ADMIN: продавцу он всё равно
+  // отдаёт его собственные категории в любом статусе — дофильтровываем на клиенте.
+  fn: (res) => res.result.data.items.filter((category) => category.status === 'APPROVED'),
   target: $categories,
 });
 
