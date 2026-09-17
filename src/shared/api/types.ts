@@ -50,6 +50,8 @@ export type Category = {
   translations: Translation<{ name: string }>[];
   sellerId: string | null;
   status: ReviewStatus;
+  /** Сколько позиций каталога привязано к категории (считает бэкенд, без учёта видимости). */
+  itemsCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -98,6 +100,8 @@ export type CatalogItem = {
   status: ReviewStatus;
   /** Вайтлист бесплатной доставки — ставит только SUPER_ADMIN. */
   freeDelivery: boolean;
+  /** Сколько продажных позиций заведено по этой позиции каталога. Считает бэкенд. */
+  listingsCount: number;
   createdAt: string;
   updatedAt: string;
 };

@@ -1,5 +1,5 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { Modal } from 'antd';
+import { Modal, Typography } from 'antd';
 import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
 import { useId } from 'react';
@@ -9,6 +9,7 @@ import { userModel } from '@/entities/user';
 import { SelectField, TextField } from '@/shared/ui/form';
 
 import * as model from '../model';
+import { CategoryItems } from './items';
 
 export const CategoryModal = () => {
   const [isOpen, editingCategory, mutating, validated, closeRequested, role] = useUnit([
@@ -36,6 +37,7 @@ export const CategoryModal = () => {
       onCancel={() => closeRequested()}
       okButtonProps={{ htmlType: 'submit', form: formId }}
       confirmLoading={mutating}
+      width={720}
       destroyOnHidden
     >
       <form onSubmit={form.handleSubmit(() => validated())} id={formId}>
@@ -43,9 +45,23 @@ export const CategoryModal = () => {
         <TextField control={form.control} name="nameUz" label="Название (UZ)" />
         <TextField control={form.control} name="nameEn" label="Название (EN)" />
         {!!editingCategory && role === 'SUPER_ADMIN' && (
-          <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
+          <>
+            <SelectField
+              control={form.control}
+              name="status"
+              label="Статус"
+              options={statusOptions}
+              disabled={editingCategory.itemsCount > 0}
+            />
+            {editingCategory.itemsCount > 0 && (
+              <Typography.Text type="secondary" style={{ display: 'block', marginTop: -10, marginBottom: 16 }}>
+                Статус нельзя изменить: к категории привязано позиций каталога — {editingCategory.itemsCount}.
+              </Typography.Text>
+            )}
+          </>
         )}
       </form>
+      {!!editingCategory && <CategoryItems />}
     </Modal>
   );
 };
