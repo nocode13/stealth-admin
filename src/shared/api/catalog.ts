@@ -8,7 +8,6 @@ export const catalog = {
   create: (payload: CatalogItemPayload) => base.post<CatalogItem>('/catalog', payload).then((r) => r.data),
   update: (id: string, payload: Partial<CatalogItemPayload>) =>
     base.patch<CatalogItem>(`/catalog/${id}`, payload).then((r) => r.data),
-  remove: (id: string) => base.delete<void>(`/catalog/${id}`).then((r) => r.data),
   /** Один роут и для фото, и для видео — тип определяется на бэкенде по содержимому файла. */
   addMedia: (id: string, file: File) => {
     const formData = new FormData();

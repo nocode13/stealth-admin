@@ -5,7 +5,7 @@ import { useController } from 'react-hook-form';
 import type { FieldProps } from './types';
 
 export type SelectFieldProps<T extends FieldValues> = FieldProps<T> &
-  Pick<SelectProps, 'showSearch' | 'allowClear' | 'searchValue' | 'loading' | 'options'> & {
+  Pick<SelectProps, 'showSearch' | 'allowClear' | 'searchValue' | 'loading' | 'options' | 'disabled'> & {
     label?: string;
     size?: 'small' | 'middle' | 'large';
     required?: boolean;

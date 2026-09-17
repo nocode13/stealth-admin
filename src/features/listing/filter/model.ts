@@ -1,5 +1,6 @@
-import { combine, createEffect, createEvent, createStore, merge, sample } from 'effector';
+import { combine, createEffect, createEvent, createStore, merge, restore, sample } from 'effector';
 import { createQuery } from 'effector-refetch';
+import { debounce } from 'patronum';
 
 import type { Category } from '@/entities/category';
 import type { Listing } from '@/entities/listing';
@@ -19,18 +20,32 @@ export const sellerModel = optionsFactory<string>({ reset });
 export const minPriceModel = numberFactory({ reset });
 export const maxPriceModel = numberFactory({ reset });
 
+export const categoriesSearchChanged = createEvent<string>();
+
 export const $categories = createStore<Category[]>([]);
+export const $categoriesSearch = restore(categoriesSearchChanged, '');
 
 const fetchCategoriesQuery = createQuery({
-  effect: createEffect(() => api.category.findAll({ limit: 100, status: 'APPROVED' })),
+  effect: createEffect((search?: string) =>
+    api.category.findAll({ limit: 100, status: 'APPROVED', search: search || undefined }),
+  ),
   cache: { staleAfter: 10_000 },
   concurrency: 'TAKE_LATEST',
 });
 
+export const $categoriesFetching = fetchCategoriesQuery.$pending;
+
 sample({
   clock: fetchCategoriesQuery.finished.done,
-  fn: (res) => res.result.data.items,
+  // Параметр status бэкенд применяет только для SUPER_ADMIN: продавцу он всё равно
+  // отдаёт его собственные категории в любом статусе — дофильтровываем на клиенте.
+  fn: (res) => res.result.data.items.filter((category) => category.status === 'APPROVED'),
   target: $categories,
+});
+
+sample({
+  clock: debounce(categoriesSearchChanged, 300),
+  target: fetchCategoriesQuery.start,
 });
 
 fetchCategoriesQuery.start();

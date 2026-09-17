@@ -33,7 +33,7 @@ src/
   features/   auth/login, auth/logout, auth/link-telegram,
               category/creat-edit (sic — так называется директория), category/filter,
               order/change-status,
-              catalog/creat-edit, catalog/delete, catalog/filter,
+              catalog/creat-edit, catalog/filter,
               listing/creat-edit, listing/delete, listing/filter,
               seller/creat-edit, seller/filter
   entities/   user/ ($user, $session, sessionFx, chainAuthorized/chainAnonymous),
@@ -85,9 +85,10 @@ src/
 - `tsconfig` включает `erasableSyntaxOnly` — **нельзя `enum`** (используем const-объект + union,
   см. `SessionStatus`) и `verbatimModuleSyntax` — импорт типов через `import type`.
 - фича с UI экспортирует namespace-объект: `{ View, Trigger?, model: { ... } }`.
-- удаление сущности — свой паттерн (`features/{catalog,listing}/delete`): без модалки/disclosure,
+- удаление сущности — свой паттерн (`features/listing/delete`): без модалки/disclosure,
   подтверждение через antd `Popconfirm` прямо в таблице; `deleteTriggered<T>` → `attach`-эффект →
   `mutated<T>` для инвалидации списка на странице. Экспортирует `{ View: <EntityDeleteButton>, model }`.
+  У каталога и категории удаления нет — управляем статусами.
 
 **Пагинация — только курсорная**, без offset и без серверной сортировки: `<Table pagination={false}>`
 плюс кнопка «Загрузить ещё», пока `nextCursor !== null`.
@@ -117,7 +118,10 @@ Segmented-фильтр по статусу, см. ниже). Эталон — `c
   `categoryId` (свой независимый fetch `api.category.findAll({ limit: 100, status: 'APPROVED' })`,
   запущенный сразу при импорте модуля — `fetchCategoriesQuery.start()` вне `sample`, без внешнего
   триггера; допустимо, т.к. `factory()`/фича-модуль — синглтон на всё время жизни приложения, см.
-  `shared/lib/create-lazy-page.tsx`); у listing вдобавок `minPrice`/`maxPrice` — по одному
+  `shared/lib/create-lazy-page.tsx`); у обоих фильтров (catalog и listing) этот селект — с
+  серверным поиском (debounce 300 через `categoriesSearchChanged`/`$categoriesSearch`, тот же
+  паттерн, что в модалке `catalog/creat-edit`), а не статический список; у listing вдобавок
+  `minPrice`/`maxPrice` — по одному
   `shared/lib/number-factory.ts` (`numberFactory`, зеркало `textFactory`, но `number | null`) на
   каждую границу диапазона.
 - В `pages/<entity>/model.ts` фильтры подключаются через `sample`+`patronum.spread` (не `.on()`):
@@ -199,15 +203,23 @@ SELLER получает только группы, где участвует, и
   поля + `status`, без картинки/числовых полей), но структурно приведён к тому же эталону, что и
   каталог/листинг/продавец: `$editingCategory`/`$mode` — голые сторы + `sample({ clock: editTriggered,
   target: $editingCategory })` (без инлайнового `.on()/.reset()`), `mutated = merge([createFx.done,
-  updateFx.done])`. У категории на бэкенде нет DELETE — удаления там и не будет.
-- **Каталог** (`features/catalog/creat-edit` + `features/catalog/delete`) — эталонный CRUD-паттерн,
-  скопированный далее для продавцов. Категория для позиции выбирается селектом (свой fetch на
-  `api.category.findAll({ limit: 100 })` при каждом открытии модалки, отфильтрован по
-  `status === 'APPROVED'` — переиспользовать стор страницы `pages/categories` нельзя, он
-  инкапсулирован в её `factory()`). Статус (`ReviewStatus`) — обычное поле формы в общем
+  updateFx.done])`. У категории на бэкенде нет DELETE — удаления там и не будет. `itemsCount`
+  (сколько позиций каталога привязано, считает бэкенд) блокирует смену статуса: в модалке селект
+  статуса дизейблится заранее при `itemsCount > 0` (плюс подпись с числом), а не только по 409 от
+  бэка — сначала отвязать позиции.
+- **Каталог** (`features/catalog/creat-edit`) — эталонный CRUD-паттерн, скопированный далее для
+  продавцов; удаления у позиции каталога нет — управляем статусом (`DELETE /catalog/:id` на бэке
+  тоже убран). Категория для позиции выбирается селектом с серверным поиском (debounce 300,
+  `api.category.findAll({ limit: 100, status: 'APPROVED', search })` — и в модалке, и в фильтре
+  страницы) — переиспользовать стор страницы `pages/categories` нельзя, он инкапсулирован в её
+  `factory()`. Параметр `status` бэкенд применяет только для `SUPER_ADMIN` — продавцу он всё равно
+  отдаёт его собственные категории в любом статусе, поэтому результат дополнительно фильтруется по
+  `status === 'APPROVED'` на клиенте. Статус (`ReviewStatus`) — обычное поле формы в общем
   `PATCH /catalog/:id` (отдельного эндпоинта под статус на бэке больше нет), но в `updateFx` поле
   `status` отправляется только если `role === 'SUPER_ADMIN'`, и в UI селект статуса показан только
-  при этом условии и только в режиме редактирования. Тем же приёмом устроен `freeDelivery`
+  при этом условии и только в режиме редактирования; смену статуса дополнительно блокирует
+  `listingsCount` (сколько продажных позиций заведено, считает бэкенд) — селект дизейблится заранее
+  при `listingsCount > 0` (плюс подпись с числом), сначала удалить листинги. Тем же приёмом устроен `freeDelivery`
   (вайтлист бесплатной доставки, `SwitchField`) — виден и в create, и в edit при
   `role === 'SUPER_ADMIN'`, в payload для остальных ролей не отправляется; `pages/catalog`
   рисует зелёный `Tag` у помеченных позиций. Фото/видео — галерея `CatalogItem.media[]`,

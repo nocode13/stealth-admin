@@ -15,6 +15,9 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
     categoryId,
     categoryChanged,
     categories,
+    categoriesSearch,
+    categoriesFetching,
+    categoriesSearchChanged,
     minPrice,
     minPriceChanged,
     maxPrice,
@@ -31,6 +34,9 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
     model.categoryModel.$value,
     model.categoryModel.changed,
     model.$categories,
+    model.$categoriesSearch,
+    model.$categoriesFetching,
+    model.categoriesSearchChanged,
     model.minPriceModel.$value,
     model.minPriceModel.changed,
     model.maxPriceModel.$value,
@@ -65,6 +71,14 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
           allowClear
           style={{ width: '100%' }}
           placeholder="Категория"
+          loading={categoriesFetching}
+          showSearch={{
+            searchValue: categoriesSearch,
+            onSearch: categoriesSearchChanged,
+            // Фильтрация серверная — клиентскую отключаем, иначе она режет ответ бэка.
+            filterOption: false,
+            autoClearSearchValue: true,
+          }}
         />
       </Col>
       {isSuperAdmin && (

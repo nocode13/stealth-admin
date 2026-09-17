@@ -164,7 +164,20 @@ export const CatalogItemModal = () => {
         <RichTextField control={form.control} name="descriptionUz" label="Описание (UZ)" />
         <RichTextField control={form.control} name="descriptionEn" label="Описание (EN)" />
         {!!editingItem && role === 'SUPER_ADMIN' && (
-          <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
+          <>
+            <SelectField
+              control={form.control}
+              name="status"
+              label="Статус"
+              options={statusOptions}
+              disabled={editingItem.listingsCount > 0}
+            />
+            {editingItem.listingsCount > 0 && (
+              <Typography.Text type="secondary" style={{ display: 'block', marginTop: -10, marginBottom: 16 }}>
+                Статус нельзя изменить: по позиции заведено продажных позиций — {editingItem.listingsCount}.
+              </Typography.Text>
+            )}
+          </>
         )}
         {role === 'SUPER_ADMIN' && (
           <SwitchField control={form.control} name="freeDelivery" label="Бесплатная доставка" />

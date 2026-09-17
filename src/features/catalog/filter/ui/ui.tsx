@@ -6,7 +6,18 @@ import { catalogConfig } from '@/entities/catalog';
 import * as model from '../model';
 
 export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [search, searchChanged, status, statusChanged, categoryId, categoryChanged, categories] = useUnit([
+  const [
+    search,
+    searchChanged,
+    status,
+    statusChanged,
+    categoryId,
+    categoryChanged,
+    categories,
+    categoriesSearch,
+    categoriesFetching,
+    categoriesSearchChanged,
+  ] = useUnit([
     model.searchModel.$value,
     model.searchModel.changed,
     model.statusModel.$value,
@@ -14,6 +25,9 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
     model.categoryModel.$value,
     model.categoryModel.changed,
     model.$categories,
+    model.$categoriesSearch,
+    model.$categoriesFetching,
+    model.categoriesSearchChanged,
   ]);
   const { token } = theme.useToken();
 
@@ -41,6 +55,14 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
           allowClear
           style={{ width: '100%' }}
           placeholder="Категория"
+          loading={categoriesFetching}
+          showSearch={{
+            searchValue: categoriesSearch,
+            onSearch: categoriesSearchChanged,
+            // Фильтрация серверная — клиентскую отключаем, иначе она режет ответ бэка.
+            filterOption: false,
+            autoClearSearchValue: true,
+          }}
         />
       </Col>
       <Col span={6}>

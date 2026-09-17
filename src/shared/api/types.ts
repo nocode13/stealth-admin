@@ -100,6 +100,8 @@ export type CatalogItem = {
   status: ReviewStatus;
   /** Вайтлист бесплатной доставки — ставит только SUPER_ADMIN. */
   freeDelivery: boolean;
+  /** Сколько продажных позиций заведено по этой позиции каталога. Считает бэкенд. */
+  listingsCount: number;
   createdAt: string;
   updatedAt: string;
 };
