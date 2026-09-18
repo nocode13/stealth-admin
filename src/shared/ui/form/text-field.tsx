@@ -13,6 +13,7 @@ export type TextFieldProps<T extends FieldValues> = FieldProps<T> & {
   autoComplete?: string;
   size?: 'small' | 'middle' | 'large';
   required?: boolean;
+  disabled?: boolean;
 };
 
 export const TextField = <T extends FieldValues>({
@@ -25,6 +26,7 @@ export const TextField = <T extends FieldValues>({
   autoComplete,
   size = 'large',
   required,
+  disabled,
 }: TextFieldProps<T>) => {
   const {
     field,
@@ -48,6 +50,7 @@ export const TextField = <T extends FieldValues>({
         prefix={prefix}
         autoComplete={autoComplete}
         status={error ? 'error' : undefined}
+        disabled={disabled}
       />
       {!!error && (
         <Typography.Text type="danger" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>

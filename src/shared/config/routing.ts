@@ -4,6 +4,7 @@ export const routes = {
   auth: createRoute(),
   home: createRoute(),
   categories: createRoute(),
+  countries: createRoute(),
 
   catalog: {
     root: createRoute(),
@@ -43,6 +44,7 @@ export const routesMap = [
   { route: routes.auth, path: '/login' },
 
   { route: routes.categories, path: '/categories' },
+  { route: routes.countries, path: '/countries' },
 
   { route: routes.catalog.root, path: '/catalog' },
   { route: routes.catalog.item, path: '/catalog/:id' },
