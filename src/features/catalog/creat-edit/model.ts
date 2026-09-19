@@ -5,6 +5,7 @@ import { createQuery } from 'effector-refetch';
 
 import type { Category } from '@/entities/category';
 import type { CatalogItem } from '@/entities/catalog';
+import type { Country } from '@/entities/country';
 import { userModel } from '@/entities/user';
 import { api } from '@/shared/api';
 import { createDisclosure } from '@/shared/lib/disclosure';
@@ -19,6 +20,7 @@ export const schema = z.object({
   nameUz: z.string().optional(),
   nameEn: z.string().optional(),
   categoryId: z.string().optional(),
+  countryId: z.string().optional(),
   descriptionRu: z.string().optional(),
   descriptionUz: z.string().optional(),
   descriptionEn: z.string().optional(),
@@ -36,6 +38,7 @@ export const DEFAULT_VALUES: FormValues = {
   nameUz: '',
   nameEn: '',
   categoryId: '',
+  countryId: '',
   descriptionRu: '',
   descriptionUz: '',
   descriptionEn: '',
@@ -77,6 +80,7 @@ export const editTriggered = createEvent<CatalogItem>();
 export const reset = createEvent();
 export const validated = createEvent();
 export const categoriesSearchChanged = createEvent<string>();
+export const countriesSearchChanged = createEvent<string>();
 /** Ручное «Обновить» в модалке: подтянуть позицию, пока её видео обрабатывается. */
 export const refreshTriggered = createEvent();
 
@@ -94,12 +98,22 @@ const fetchCategoriesQuery = createQuery({
   concurrency: 'TAKE_LATEST',
 });
 
+export const $countries = createStore<Country[]>([]);
+export const $countriesSearch = restore(countriesSearchChanged, '');
+
+const fetchCountriesQuery = createQuery({
+  effect: createEffect((search?: string) => api.country.findAll({ limit: 100, search: search || undefined })),
+  cache: { staleAfter: 10_000 },
+  concurrency: 'TAKE_LATEST',
+});
+
 export const createFx = attach({
   source: { values: form.$formValues, role: userModel.$role },
   effect: ({ values, role }) =>
     api.catalog.create({
       translations: toTranslations(values),
       categoryId: values.categoryId || undefined,
+      countryId: values.countryId || undefined,
       freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
     }),
 });
@@ -113,6 +127,7 @@ export const updateFx = attach({
       // Именно null, а не undefined: undefined в PATCH означает «не менять»,
       // и очистка селекта не доехала бы до бэкенда.
       categoryId: values.categoryId || null,
+      countryId: values.countryId || null,
       status: role === 'SUPER_ADMIN' ? values.status : undefined,
       freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
     });
@@ -163,13 +178,14 @@ const saved = merge([createFx.done, updateFx.done]);
 /** Только что созданная позиция — из неё страница каталога заводит продажную позицию. */
 export const created = createFx.doneData;
 export const $categoriesFetching = fetchCategoriesQuery.$pending;
+export const $countriesFetching = fetchCountriesQuery.$pending;
 
 $mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
 
 sample({
   clock: [createTriggered, editTriggered],
   fn: () => undefined,
-  target: [fetchCategoriesQuery.start, disclosure.opened],
+  target: [fetchCategoriesQuery.start, fetchCountriesQuery.start, disclosure.opened],
 });
 
 sample({
@@ -203,6 +219,17 @@ sample({
   target: fetchCategoriesQuery.start,
 });
 
+sample({
+  clock: fetchCountriesQuery.finished.done,
+  fn: (res) => res.result.data.items,
+  target: $countries,
+});
+
+sample({
+  clock: debounce(countriesSearchChanged, 300),
+  target: fetchCountriesQuery.start,
+});
+
 /** auto: true → перевод не задан (значение — копия RU), поле рисуем пустым. */
 const pickTranslation = (item: CatalogItem, locale: 'RU' | 'UZ' | 'EN') =>
   item.translations.find((t) => t.locale === locale);
@@ -218,6 +245,7 @@ sample({
       nameUz: uz && !uz.auto ? uz.name : '',
       nameEn: en && !en.auto ? en.name : '',
       categoryId: item.categoryId ?? '',
+      countryId: item.countryId ?? '',
       descriptionRu: ru?.description ?? '',
       descriptionUz: uz && !uz.auto ? (uz.description ?? '') : '',
       descriptionEn: en && !en.auto ? (en.description ?? '') : '',
@@ -253,6 +281,8 @@ sample({
     $mode.reinit,
     $categories.reinit,
     $categoriesSearch.reinit,
+    $countries.reinit,
+    $countriesSearch.reinit,
   ],
 });
 

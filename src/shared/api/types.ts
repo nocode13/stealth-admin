@@ -69,6 +69,34 @@ export interface FindCategoriesParams extends CursorPageParams {
   sellerId?: string;
 }
 
+/** Платформенный справочник стран — в отличие от Category, нет status/sellerId: продавец
+ * страну не предлагает, только выбирает из готового списка, заводит SUPER_ADMIN. */
+export type Country = {
+  id: string;
+  /** ISO 3166-1 alpha-2, заглавными. Задаётся при создании, PATCH его не меняет. */
+  code: string;
+  /** Резолвленное имя (для админки всегда RU) — для таблиц и селектов. */
+  name: string;
+  translations: Translation<{ name: string }>[];
+  /** Сколько позиций каталога ссылается на страну. Считает бэкенд. */
+  itemsCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export interface CountryPayload {
+  /** RU обязателен, остальные локали опциональны — пусто = не переведено. */
+  translations: { locale: Locale; name?: string }[];
+}
+
+export interface CreateCountryPayload extends CountryPayload {
+  code: string;
+}
+
+export interface FindCountriesParams extends CursorPageParams {
+  search?: string;
+}
+
 export type MediaType = 'IMAGE' | 'VIDEO';
 
 /** PROCESSING/FAILED бывают только у видео: транскод идёт фоном уже после ответа на загрузку. */
@@ -94,6 +122,8 @@ export type CatalogItem = {
   translations: Translation<{ name: string; description: string | null; unit: string }>[];
   categoryId: string | null;
   category: Category | null;
+  countryId: string | null;
+  country: Country | null;
   /** Фото и видео одной галереей, сквозной порядок по sortOrder. */
   media: CatalogItemMedia[];
   sellerId: string | null;
@@ -111,6 +141,8 @@ export interface CatalogItemPayload {
   translations: { locale: Locale; name?: string; description?: string; unit?: string }[];
   /** `null` в PATCH снимает категорию; `undefined` — не менять. */
   categoryId?: string | null;
+  /** `null` в PATCH снимает страну; `undefined` — не менять. */
+  countryId?: string | null;
   status?: ReviewStatus;
   /** Только для SUPER_ADMIN — для остальных ролей молча игнорируется на бэкенде. */
   freeDelivery?: boolean;
@@ -121,6 +153,7 @@ export interface FindCatalogParams extends CursorPageParams {
   categoryId?: string;
   /** Только позиции без категории; `categoryId` при этом игнорируется. */
   noCategory?: boolean;
+  countryId?: string;
   status?: ReviewStatus;
   /** Только для SUPER_ADMIN — SELLER скоупится по видимости на бэкенде. */
   sellerId?: string;

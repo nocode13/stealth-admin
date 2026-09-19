@@ -1,7 +1,7 @@
 # stealth-admin
 
 Веб-админка (панель управления) к бэкенду **stealth-backend**. Разделы: заказы, категории,
-каталог, продавцы, продажные позиции.
+страны, каталог, продавцы, продажные позиции.
 
 ## Стек
 
@@ -23,7 +23,7 @@
 ```
 src/
   app/        app.tsx (провайдеры + RouterProvider + contextHolder'ы), model.ts (инициализация роутера)
-  pages/      auth, home, categories, catalog, listing, sellers, seller-detail, orders,
+  pages/      auth, home, categories, countries, catalog, listing, sellers, seller-detail, orders,
               order-detail, forbidden, not-found. Каждая — ленивая (code-split):
                 model.ts        factory({ route }) с guard'ом и запросами
                 ui/ui.tsx       export component + createModel (строго эти два имени)
@@ -32,12 +32,13 @@ src/
   widgets/    layout/ — сайдбар, меню (MENU_ROUTES + $activeRoutes), кнопки привязки TG и выхода
   features/   auth/login, auth/logout, auth/link-telegram,
               category/creat-edit (sic — так называется директория), category/filter,
+              country/creat-edit, country/filter,
               order/change-status,
               catalog/creat-edit, catalog/filter,
               listing/creat-edit, listing/delete, listing/filter,
               seller/creat-edit, seller/filter
   entities/   user/ ($user, $session, sessionFx, chainAuthorized/chainAnonymous),
-              category/, catalog/, listing/, seller/, order/
+              category/, country/, catalog/, listing/, seller/, order/
   shared/
     api/      instances.ts (axios base, withCredentials), по файлу на ресурс
               (auth, category, catalog, listing, orders, sellers), error.ts, types.ts,
@@ -207,6 +208,18 @@ SELLER получает только группы, где участвует, и
   (сколько позиций каталога привязано, считает бэкенд) блокирует смену статуса: в модалке селект
   статуса дизейблится заранее при `itemsCount > 0` (плюс подпись с числом), а не только по 409 от
   бэка — сначала отвязать позиции.
+- **Страна** (`entities/country`, `features/country/creat-edit` + `features/country/filter`,
+  `pages/countries`, роут `/countries`, только `SUPER_ADMIN`) — платформенный справочник
+  происхождения товара, структурно копия категории, но **без** `status`/`sellerId`/ревью: продавец
+  страну не предлагает, только выбирает из готового списка. Отличия от категории: поле `code`
+  (ISO 3166-1 alpha-2, задаётся только при создании — задизейблено в форме редактирования, `PATCH`
+  его не шлёт); удаление есть (`deleteRequested`/`deleteFx` внутри `creat-edit/model.ts`, а не
+  отдельная фича — `Popconfirm` прямо в actions таблицы `pages/countries`), блокируется по
+  `itemsCount > 0` тем же приёмом, что смена статуса у категории; фильтр — только поиск по имени.
+  `shared/ui/form/text-field.tsx` получил проп `disabled` ради задизейбленного `code` при
+  редактировании. В форме позиции каталога (`features/catalog/creat-edit`) и в её фильтре
+  (`features/catalog/filter`) страна — второй такой же селект с серверным поиском рядом с
+  категорией, без `status`-фильтра на клиенте (у страны фильтровать нечего).
 - **Каталог** (`features/catalog/creat-edit`) — эталонный CRUD-паттерн, скопированный далее для
   продавцов; удаления у позиции каталога нет — управляем статусом (`DELETE /catalog/:id` на бэке
   тоже убран). Категория для позиции выбирается селектом с серверным поиском (debounce 300,
