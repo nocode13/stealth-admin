@@ -101,6 +101,10 @@ export const CatalogItemModal = () => {
     categoriesSearch,
     categoriesFetching,
     categoriesSearchChanged,
+    countryOptions,
+    countriesSearch,
+    countriesFetching,
+    countriesSearchChanged,
   ] = useUnit([
     model.disclosure.$isOpen,
     model.$editingItem,
@@ -118,6 +122,10 @@ export const CatalogItemModal = () => {
     model.$categoriesSearch,
     model.$categoriesFetching,
     model.categoriesSearchChanged,
+    model.$countries,
+    model.$countriesSearch,
+    model.$countriesFetching,
+    model.countriesSearchChanged,
   ]);
 
   const formId = useId();
@@ -153,6 +161,20 @@ export const CatalogItemModal = () => {
           showSearch={{
             searchValue: categoriesSearch,
             onSearch: categoriesSearchChanged,
+            filterOption: false,
+            autoClearSearchValue: true,
+          }}
+        />
+        <SelectField
+          control={form.control}
+          name="countryId"
+          label="Страна"
+          allowClear
+          options={countryOptions.map((country) => ({ value: country.id, label: country.name }))}
+          loading={countriesFetching}
+          showSearch={{
+            searchValue: countriesSearch,
+            onSearch: countriesSearchChanged,
             filterOption: false,
             autoClearSearchValue: true,
           }}

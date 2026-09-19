@@ -33,6 +33,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
           categoryId:
             filters.categoryId && filters.categoryId !== CatalogFilters.NO_CATEGORY ? filters.categoryId : undefined,
           noCategory: filters.categoryId === CatalogFilters.NO_CATEGORY || undefined,
+          countryId: filters.countryId || undefined,
           status: filters.status || undefined,
         }),
     ),

@@ -2,6 +2,7 @@ import { appVersions } from './app-versions';
 import { auth } from './auth';
 import { catalog } from './catalog';
 import { category } from './category';
+import { country } from './country';
 import { listing } from './listing';
 import { metrics } from './metrics';
 import { orders } from './orders';
@@ -18,7 +19,11 @@ export type {
   Category,
   CategoryPayload,
   ChangeOrderStatusPayload,
+  Country,
+  CountryPayload,
+  CreateCountryPayload,
   CursorPage,
+  FindCountriesParams,
   FindMetricsPeriodParams,
   FindOrdersParams,
   Listing,
@@ -53,4 +58,4 @@ export type {
 export { getApiErrorMessage } from './error';
 export { base } from './instances';
 
-export const api = { appVersions, auth, category, catalog, listing, metrics, orders, sellers, settings };
+export const api = { appVersions, auth, category, catalog, country, listing, metrics, orders, sellers, settings };

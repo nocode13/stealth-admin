@@ -6,6 +6,7 @@ import {
   HomeOutlined,
   AppstoreOutlined,
   BarChartOutlined,
+  GlobalOutlined,
   MobileOutlined,
   SettingOutlined,
   ShopOutlined,
@@ -39,6 +40,13 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
     roles: ['SELLER', 'SUPER_ADMIN'],
     key: 'categories',
     icon: TagsOutlined,
+  },
+  {
+    route: routes.countries,
+    label: 'Страны',
+    roles: ['SUPER_ADMIN'],
+    key: 'countries',
+    icon: GlobalOutlined,
   },
   {
     route: routes.sellers.root,
@@ -96,6 +104,7 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
 export const $activeRoutes = combine({
   home: routes.home.$isOpened,
   categories: routes.categories.$isOpened,
+  countries: routes.countries.$isOpened,
   sellers: or(routes.sellers.root.$isOpened, routes.sellers.seller.$isOpened),
   catalog: or(routes.catalog.root.$isOpened, routes.catalog.item.$isOpened),
   listing: or(routes.listing.root.$isOpened, routes.listing.item.$isOpened),
