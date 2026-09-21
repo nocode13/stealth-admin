@@ -1,4 +1,4 @@
-import { createEffect, createEvent, createStore, sample } from 'effector';
+import { createEffect, createEvent, createStore, merge, sample } from 'effector';
 import { createQuery } from 'effector-refetch';
 import { interval, spread } from 'patronum';
 
@@ -67,7 +67,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
   const { tick } = interval({
     timeout: POLL_MS,
     start: $hasSending.updates.filter({ fn: Boolean }),
-    stop: [$hasSending.updates.filter({ fn: (has) => !has }), authorizedRoute.closed],
+    stop: merge([$hasSending.updates.filter({ fn: (has) => !has }), authorizedRoute.closed]),
   });
 
   sample({
