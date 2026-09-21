@@ -2,6 +2,7 @@ import {
   BoldOutlined,
   ClearOutlined,
   ItalicOutlined,
+  LinkOutlined,
   OrderedListOutlined,
   RedoOutlined,
   StrikethroughOutlined,
@@ -12,8 +13,8 @@ import {
 import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
-import { Button, Flex, Segmented, Tooltip, Typography, theme } from 'antd';
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { Button, Flex, Input, Popover, Segmented, Space, Tooltip, Typography, theme } from 'antd';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import type { FieldValues } from 'react-hook-form';
 import { useController } from 'react-hook-form';
 
@@ -26,6 +27,10 @@ export type RichTextFieldProps<T extends FieldValues> = FieldProps<T> & {
   label?: string;
   placeholder?: string;
   required?: boolean;
+  /** H2/H3 в тулбаре. Выключается там, где заголовков нет (сообщение Telegram). */
+  headings?: boolean;
+  /** Ссылки. По умолчанию выключены — в описаниях каталога их нет по продукту. */
+  links?: boolean;
 };
 
 type Block = 'p' | 'h2' | 'h3';
@@ -79,10 +84,57 @@ const Separator = () => {
   return <span aria-hidden style={{ width: 1, height: 16, margin: '0 4px', background: token.colorSplit }} />;
 };
 
+const LinkButton = ({ editor, active }: { editor: Editor; active: boolean }) => {
+  const [open, setOpen] = useState(false);
+  const [href, setHref] = useState('');
+
+  const apply = () => {
+    const url = href.trim();
+    const chain = editor.chain().focus().extendMarkRange('link');
+    (url ? chain.setLink({ href: url }) : chain.unsetLink()).run();
+    setOpen(false);
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setHref((editor.getAttributes('link').href as string | undefined) ?? 'https://');
+        setOpen(next);
+      }}
+      trigger="click"
+      content={
+        <Space.Compact>
+          <Input
+            autoFocus
+            value={href}
+            onChange={(e) => setHref(e.target.value)}
+            onPressEnter={(e) => {
+              e.preventDefault();
+              apply();
+            }}
+            placeholder="https://"
+            style={{ width: 260 }}
+          />
+          <Button type="primary" onClick={apply}>
+            OK
+          </Button>
+        </Space.Compact>
+      }
+    >
+      <span>
+        <ToolButton title="Ссылка" icon={<LinkOutlined />} active={active} onClick={() => undefined} />
+      </span>
+    </Popover>
+  );
+};
+
 /**
  * HTML-описание (tiptap v3) — для `description*` каталога и продавца. Набор форматирования
  * совпадает с allowlist бэкенда (`stealth-backend/src/common/rich-text.ts`): ссылок, кода,
  * картинок и видео нет — неизвестные ноды ProseMirror выбрасывает и при вставке из буфера.
+ * Рассылки включают `links` и выключают `headings` — под то, что умеет Telegram
+ * (`stealth-backend/src/broadcasts/telegram-html.ts`).
  */
 export const RichTextField = <T extends FieldValues>({
   name,
@@ -90,6 +142,8 @@ export const RichTextField = <T extends FieldValues>({
   label,
   placeholder,
   required,
+  headings = true,
+  links = false,
 }: RichTextFieldProps<T>) => {
   const {
     field,
@@ -101,8 +155,8 @@ export const RichTextField = <T extends FieldValues>({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3] },
-        link: false,
+        heading: headings ? { levels: [2, 3] } : false,
+        link: links ? { openOnClick: false, protocols: ['http', 'https'] } : false,
         code: false,
         codeBlock: false,
         horizontalRule: false,
@@ -133,6 +187,7 @@ export const RichTextField = <T extends FieldValues>({
       bulletList: e.isActive('bulletList'),
       orderedList: e.isActive('orderedList'),
       blockquote: e.isActive('blockquote'),
+      link: e.isActive('link'),
       canUndo: e.can().undo(),
       canRedo: e.can().redo(),
     }),
@@ -166,8 +221,12 @@ export const RichTextField = <T extends FieldValues>({
           gap={2}
           style={{ padding: 4, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
         >
-          <Segmented<Block> size="small" value={state.block} options={BLOCK_OPTIONS} onChange={setBlock} />
-          <Separator />
+          {headings && (
+            <>
+              <Segmented<Block> size="small" value={state.block} options={BLOCK_OPTIONS} onChange={setBlock} />
+              <Separator />
+            </>
+          )}
           <ToolButton
             title="Жирный"
             icon={<BoldOutlined />}
@@ -192,6 +251,7 @@ export const RichTextField = <T extends FieldValues>({
             active={state.strike}
             onClick={() => editor.chain().focus().toggleStrike().run()}
           />
+          {links && <LinkButton editor={editor} active={state.link} />}
           <Separator />
           <ToolButton
             title="Маркированный список"

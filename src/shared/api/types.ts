@@ -438,3 +438,69 @@ export interface MetricsOverview {
     pendingCatalogItems: number;
   };
 }
+
+/** Текст сразу всеми языками — как хранит бэкенд (`LocalizedText`). RU обязателен, пустые UZ/EN не приходят. */
+export type LocalizedText = Partial<Record<Locale, string>> & { RU: string };
+
+export type BroadcastAudience = 'ALL' | 'SELECTED';
+export type BroadcastStatus = 'SENDING' | 'DONE' | 'FAILED';
+
+export interface Broadcast {
+  id: string;
+  createdBy: { id: string; name: string | null; email: string | null };
+  title: LocalizedText;
+  /** HTML из rich-text редактора. */
+  body: LocalizedText;
+  buttonText: LocalizedText | null;
+  buttonUrl: string | null;
+  sendPush: boolean;
+  sendTelegram: boolean;
+  audience: BroadcastAudience;
+  recipientIds: string[];
+  status: BroadcastStatus;
+  /** Строк в ленте = покупателей на момент отправки. */
+  recipientsCount: number;
+  /** Push считается по установкам, а не по людям. */
+  pushSent: number;
+  pushFailed: number;
+  tgSent: number;
+  tgFailed: number;
+  /** Юзер заблокировал бота. */
+  tgBlocked: number;
+  createdAt: string;
+  finishedAt: string | null;
+}
+
+export interface BroadcastAudiencePayload {
+  audience: BroadcastAudience;
+  recipientIds?: string[];
+}
+
+export interface BroadcastAudienceCount {
+  total: number;
+  withPush: number;
+  withTelegram: number;
+}
+
+export interface CreateBroadcastPayload extends BroadcastAudiencePayload {
+  title: LocalizedText;
+  body: LocalizedText;
+  sendPush: boolean;
+  sendTelegram: boolean;
+  buttonText?: LocalizedText;
+  buttonUrl?: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  telegramId: string | null;
+  locale: Locale | null;
+  createdAt: string;
+}
+
+export interface FindCustomersParams extends CursorPageParams {
+  search?: string;
+}
