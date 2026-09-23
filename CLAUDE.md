@@ -36,9 +36,10 @@ src/
               order/change-status,
               catalog/creat-edit, catalog/filter,
               listing/creat-edit, listing/delete, listing/filter,
-              seller/creat-edit, seller/filter
+              seller/creat-edit, seller/filter,
+              broadcast/create
   entities/   user/ ($user, $session, sessionFx, chainAuthorized/chainAnonymous),
-              category/, country/, catalog/, listing/, seller/, order/
+              category/, country/, catalog/, listing/, seller/, order/, broadcast/
   shared/
     api/      instances.ts (axios base, withCredentials), по файлу на ресурс
               (auth, category, catalog, listing, orders, sellers), error.ts, types.ts,
@@ -307,6 +308,22 @@ SELLER получает только группы, где участвует, и
 продублированы с бэкендом намеренно: бэкенд такое сочетание молча игнорирует (force-update не
 включает), и без ошибки в форме поле выглядело бы рабочим. Пустое поле «что нового» уезжает
 пустой строкой — в `null` её приводит бэкенд.
+
+## Рассылки
+
+`pages/broadcasts` (`/broadcasts`, роль `SUPER_ADMIN`) — ручные push + Telegram покупателям
+(`shared/api/broadcast.ts`, `shared/api/customer.ts`, бэкенд — `stealth-backend/src/broadcasts/`).
+История — таблица со счётчиками доставки; пока есть рассылка в `SENDING` (бэкенд доставляет в
+фоне), первая страница поллится `patronum.interval` раз в 5 с.
+
+- `features/broadcast/create` — форма в `Drawer` (полей много): вкладки RU/UZ/EN (заголовок,
+  текст, текст кнопки; пустые UZ/EN не отправляются — бэкенд падает на RU), ссылка кнопки,
+  каналы, аудитория «всем / выбранным» (мультиселект с серверным поиском по `/admin/customers`;
+  `$knownCustomers` держит подписи выбранных, когда поиск их уже не возвращает). Справа —
+  превью push и Telegram на языке активной вкладки. Сабмит → `audience-count` → модалка
+  подтверждения с цифрами → `create`. Лимиты в zod-схеме — зеркало DTO бэкенда.
+- Текст — `RichTextField` с `links` и `headings={false}`: под то, что Telegram умеет показать
+  (бэкенд разворачивает списки в «• »/«1. », ссылки оставляет).
 
 ## Auth (важно)
 
