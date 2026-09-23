@@ -1,8 +1,10 @@
 import { appVersions } from './app-versions';
 import { auth } from './auth';
+import { broadcast } from './broadcast';
 import { catalog } from './catalog';
 import { category } from './category';
 import { country } from './country';
+import { customer } from './customer';
 import { listing } from './listing';
 import { metrics } from './metrics';
 import { orders } from './orders';
@@ -13,6 +15,11 @@ export type {
   AppPlatform,
   AppVersion,
   BotLinkSession,
+  Broadcast,
+  BroadcastAudience,
+  BroadcastAudienceCount,
+  BroadcastAudiencePayload,
+  BroadcastStatus,
   CatalogItem,
   CatalogItemMedia,
   CatalogItemPayload,
@@ -21,14 +28,19 @@ export type {
   ChangeOrderStatusPayload,
   Country,
   CountryPayload,
+  CreateBroadcastPayload,
   CreateCountryPayload,
   CursorPage,
+  Customer,
   FindCountriesParams,
+  FindCustomersParams,
   FindMetricsPeriodParams,
   FindOrdersParams,
   Listing,
   ListingPayload,
   ListingStatus,
+  Locale,
+  LocalizedText,
   LoginPayload,
   MetricsCatalog,
   MetricsOrders,
@@ -58,4 +70,17 @@ export type {
 export { getApiErrorMessage } from './error';
 export { base } from './instances';
 
-export const api = { appVersions, auth, category, catalog, country, listing, metrics, orders, sellers, settings };
+export const api = {
+  appVersions,
+  auth,
+  broadcast,
+  category,
+  catalog,
+  country,
+  customer,
+  listing,
+  metrics,
+  orders,
+  sellers,
+  settings,
+};

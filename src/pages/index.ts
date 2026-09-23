@@ -16,6 +16,7 @@ import { SellerDetail } from './seller-detail';
 import { Settings } from './settings';
 import { AppVersions } from './app-versions';
 import { Team } from './team';
+import { Broadcasts } from './broadcasts';
 
 export const Pages = createRoutesView({
   routes: [
@@ -33,6 +34,7 @@ export const Pages = createRoutesView({
     Metrics,
     Settings,
     AppVersions,
+    Broadcasts,
     NotFound,
     Forbidden,
   ],
