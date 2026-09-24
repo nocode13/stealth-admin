@@ -51,6 +51,9 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         <Card size="small" style={{ minWidth: 200 }}>
           <Statistic title="Выручка" value={formatAmount(overview?.today.revenue ?? 0)} suffix="сум" />
         </Card>
+        <Card size="small" style={{ minWidth: 200 }}>
+          <Statistic title="Маржа" value={formatAmount(overview?.today.margin ?? 0)} suffix="сум" />
+        </Card>
       </Flex>
 
       <Typography.Title level={4} style={{ margin: 0 }}>
@@ -65,6 +68,9 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         </Card>
         <Card size="small" style={{ minWidth: 200 }}>
           <Statistic title="Выручка" value={formatAmount(overview?.allTime.totalRevenue ?? 0)} suffix="сум" />
+        </Card>
+        <Card size="small" style={{ minWidth: 200 }}>
+          <Statistic title="Маржа" value={formatAmount(overview?.allTime.totalMargin ?? 0)} suffix="сум" />
         </Card>
         <Card size="small" style={{ minWidth: 200 }}>
           <Statistic title="Активных продавцов" value={overview?.allTime.activeSellers ?? 0} />
@@ -99,6 +105,9 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         </Card>
         <Card size="small" style={{ minWidth: 200 }}>
           <Statistic title="Выручка" value={formatAmount(orders?.revenue ?? 0)} suffix="сум" />
+        </Card>
+        <Card size="small" style={{ minWidth: 200 }}>
+          <Statistic title="Маржа" value={formatAmount(orders?.margin ?? 0)} suffix="сум" />
         </Card>
         <Card size="small" style={{ minWidth: 200 }}>
           <Statistic title="Средний чек" value={formatAmount(orders?.averageOrderValue ?? 0)} suffix="сум" />
