@@ -8,7 +8,7 @@ import { StatusTag as SellerStatusTag } from '@/entities/seller';
 import { GroupStatusTag, formatMoney, type OrderGroup } from '@/entities/order';
 import { StatusTag as CategoryStatusTag, type Category } from '@/entities/category';
 import { StatusTag as CatalogStatusTag, type CatalogItem } from '@/entities/catalog';
-import { StatusTag as ListingStatusTag, type Listing } from '@/entities/listing';
+import { StatusTag as ListingStatusTag, getPriceColumns, type Listing } from '@/entities/listing';
 import { routes } from '@/shared/config/routing';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate } from '@/shared/lib/format';
@@ -213,11 +213,8 @@ const useCatalogColumns = (): TableProps<CatalogItem>['columns'] => {
 const useListingColumns = (): TableProps<Listing>['columns'] => {
   return [
     { title: 'Позиция', key: 'catalogItem', render: (_, listing) => listing.catalogItem.name },
-    {
-      title: 'Цена',
-      key: 'price',
-      render: (_, listing) => formatMoney(listing.price),
-    },
+    // Страница продавца — только SUPER_ADMIN (admin/sellers), поэтому розница есть всегда.
+    ...getPriceColumns(true),
     { title: 'Остаток', dataIndex: 'stock' },
     {
       title: 'Статус',

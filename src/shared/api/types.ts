@@ -161,17 +161,23 @@ export interface FindCatalogParams extends CursorPageParams {
   freeDelivery?: boolean;
 }
 
-/** Платформенный тариф доставки — синглтон, правит только SUPER_ADMIN. */
+/** Платформенный тариф доставки и наценка — синглтон, правит только SUPER_ADMIN. */
 export interface PlatformSettings {
   /** В тиинах (1 сум = 100 тиинов). */
   deliveryFee: number;
   /** В тиинах; `null` — бесплатной доставки по порогу нет. */
   freeDeliveryThreshold: number | null;
+  /** Базовая наценка поверх себестоимости, в базисных пунктах (2000 = 20%). */
+  markupBps: number;
+  /** Шаг округления розничной цены вверх, в тиинах (100 = до целого сума). */
+  priceRoundingStep: number;
 }
 
 export interface UpdatePlatformSettingsPayload {
   deliveryFee?: number;
   freeDeliveryThreshold?: number | null;
+  markupBps?: number;
+  priceRoundingStep?: number;
 }
 
 export type AppPlatform = 'IOS' | 'ANDROID';
@@ -197,8 +203,12 @@ export type Listing = {
   seller?: Pick<Seller, 'id' | 'name'>;
   catalogItemId: string;
   catalogItem: CatalogItem;
-  /** В тиинах (1 сум = 100 тиинов). */
-  price: string;
+  /** Себестоимость — столько платформа должна продавцу. В тиинах (1 сум = 100 тиинов). */
+  costPrice: string;
+  /** Розница на витрине, в тиинах. Считает бэкенд; приходит только SUPER_ADMIN. */
+  price?: string;
+  /** Сработавшее правило цены; `null` — базовая наценка. Приходит только SUPER_ADMIN. */
+  appliedRule?: { id: string; name: string } | null;
   stock: number;
   status: ListingStatus;
   createdAt: string;
@@ -207,8 +217,8 @@ export type Listing = {
 
 export interface ListingPayload {
   catalogItemId: string;
-  /** В тиинах (1 сум = 100 тиинов). */
-  price: number;
+  /** Себестоимость в тиинах (1 сум = 100 тиинов). Розницу считает бэкенд. */
+  costPrice: number;
   stock: number;
   status?: ListingStatus;
   /** Только для SUPER_ADMIN (он не привязан к продавцу) и только при создании. */
@@ -219,9 +229,9 @@ export interface FindListingsParams extends CursorPageParams {
   search?: string;
   categoryId?: string;
   status?: ListingStatus;
-  /** В тиинах. */
+  /** В тиинах. У SUPER_ADMIN — по рознице, у SELLER — по себестоимости. */
   minPrice?: number;
-  /** В тиинах. */
+  /** В тиинах. У SUPER_ADMIN — по рознице, у SELLER — по себестоимости. */
   maxPrice?: number;
   /** Только для SUPER_ADMIN — SELLER всегда скоупится своим продавцом. */
   sellerId?: string;
@@ -309,9 +319,15 @@ export interface OrderItem {
   catalogItemName: string;
   catalogItemImageUrl: string | null;
   unit: string;
+  /** Розница. У SELLER сервер кладёт сюда себестоимость — розницу он не видит. */
   price: string;
   quantity: number;
+  /** Розница × количество (у SELLER — себестоимость × количество). */
   total: string;
+  /** Только SUPER_ADMIN. */
+  costPrice?: string;
+  /** Только SUPER_ADMIN. */
+  costTotal?: string;
   createdAt: string;
 }
 
@@ -329,9 +345,12 @@ export interface Order {
   orderNumber: number;
   seller: { id: string; name: string };
   status: OrderStatus;
-  /** Доля этого продавца. Доставка на заказ не раскладывается — она платформенная,
-   * посчитана один раз и живёт в OrderGroup.deliveryFee/total. */
+  /** Сумма товаров этого продавца: розница, у SELLER — себестоимость (к выплате).
+   * Доставка на заказ не раскладывается — она платформенная, посчитана один раз и
+   * живёт в OrderGroup.deliveryFee/total. */
   itemsTotal: string;
+  /** Выплата продавцу. Только SUPER_ADMIN. */
+  costTotal?: string;
   courierName: string | null;
   courierPhone: string | null;
   cancelReason: string | null;
@@ -365,6 +384,10 @@ export interface OrderGroup {
   ordersCount: number;
   createdAt: string;
   orders: Order[];
+  /** Сумма выплат продавцам по группе. Только SUPER_ADMIN. */
+  costTotal?: string;
+  /** itemsTotal − costTotal: маржа платформы на товарах. Только SUPER_ADMIN. */
+  margin?: string;
 }
 
 export interface FindOrdersParams extends CursorPageParams {
@@ -408,6 +431,8 @@ export interface MetricsOrders {
   orderCount: number;
   /** В тиинах (1 сум = 100 тиинов). Исключает CANCELLED. */
   revenue: number;
+  /** Маржа платформы: revenue − выплаты продавцам. В тиинах, исключает CANCELLED. */
+  margin: number;
   /** В тиинах (1 сум = 100 тиинов). */
   averageOrderValue: number;
   byStatus: MetricsOrdersByStatus[];
@@ -427,12 +452,16 @@ export interface MetricsOverview {
     orderCount: number;
     /** В тиинах (1 сум = 100 тиинов). */
     revenue: number;
+    /** Маржа платформы, в тиинах. */
+    margin: number;
   };
   allTime: {
     totalUsers: number;
     totalOrders: number;
     /** В тиинах (1 сум = 100 тиинов). */
     totalRevenue: number;
+    /** Маржа платформы, в тиинах. */
+    totalMargin: number;
     activeSellers: number;
     pendingCategories: number;
     pendingCatalogItems: number;

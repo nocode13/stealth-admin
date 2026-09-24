@@ -257,7 +257,7 @@ SELLER получает только группы, где участвует, и
   в таблице показаны без доп. ролевых гейтов. `status` (`ListingStatus`) — обычное поле формы в обоих
   режимах: у листинга нет review-процесса и transition-map на бэкенде, значение принимается любое;
   `entities/listing.STATUS_LABELS` **без перевода** (значение = сырой enum, `DRAFT`/`ACTIVE`/`ARCHIVED`).
-  `price`/`stock` — числовые поля через `NumberField` (`shared/ui/form/number-field.tsx`, обёртка над
+  `costPrice`/`stock` — числовые поля через `NumberField` (`shared/ui/form/number-field.tsx`, обёртка над
   antd `InputNumber`) + `z.coerce.number()`. Нет изображения/баннера у листинга, поэтому
   `$editingListing` и `mutated` собраны по эталону каталога, но без ветки под `uploadXFx`: `$editingListing` — просто
   `sample({ clock: editTriggered, target: $editingListing })` (без инлайнового `.on()/.reset()`),
@@ -289,6 +289,20 @@ SELLER получает только группы, где участвует, и
 как у остальных денежных полей. `freeDeliveryThreshold` — тоже `NumberField`, но `number | null`:
 пустое поле = `null` = «порога нет» (в zod-схеме — `z.preprocess` до `z.union([z.null(), ...])`,
 голый `z.coerce.number()` превратил бы пустую строку в `0`, а не в `null`).
+Карточка «Ценообразование» — `markupPercent` (в UI проценты, в API `markupBps`, 20% = 2000) и
+`priceRoundingStep` (в UI сумы, в API тиины). Их смена пересчитывает цены всей витрины на бэкенде,
+поэтому `updateFx` шлёт эти поля **только если они изменились** относительно `$settings`.
+
+## Цены (себестоимость и розница)
+
+Листинг несёт две цены: `costPrice` (себестоимость — выплата продавцу, её вводят в форме
+`features/listing/creat-edit`) и `price` (розница на витрине). **Розницу считает бэкенд**
+(наценка из настроек + правила цены), в форме её нет, и формула на клиенте не дублируется.
+`price`, `appliedRule` у листинга и `costPrice`/`costTotal`/`margin` у заказа приходят **только
+`SUPER_ADMIN`** (в типах — опциональные поля). `SELLER` видит лишь себестоимость: в заказах бэкенд
+кладёт её прямо в `price`/`total`/`itemsTotal`, поэтому разметка для него не ветвится — только
+подписи («К выплате»). Колонки цены в таблицах листингов — `getPriceColumns(showRetail)` из
+`entities/listing`, не копировать по страницам.
 
 ## Версии приложения
 
