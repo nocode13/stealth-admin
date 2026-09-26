@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- createLazyPage требует из модуля страницы экспорт component + createModel */
-import { Button, Card, Descriptions, Flex, Spin, Steps, Table, Typography, type TableProps } from 'antd';
+import { Button, Card, Descriptions, Flex, Spin, Steps, Table, Tag, Typography, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
 import { ChangeGroupStatus } from '@/features/order/change-group-status';
@@ -30,8 +30,47 @@ const ITEM_COLUMNS: TableProps<OrderItem>['columns'] = [
     key: 'quantity',
     render: (_, item) => `${item.quantity} ${item.unit}`,
   },
+  // У SELLER бэкенд кладёт в price/total себестоимость — розницу он не видит.
   { title: 'Цена', key: 'price', render: (_, item) => formatMoney(item.price) },
   { title: 'Сумма', key: 'total', render: (_, item) => formatMoney(item.total) },
+];
+
+// SUPER_ADMIN: рядом с розницей — акция (скидку оплатила маржа), выплата продавцу и маржа.
+const SUPER_ADMIN_ITEM_COLUMNS: TableProps<OrderItem>['columns'] = [
+  ...(ITEM_COLUMNS ?? []),
+  {
+    title: 'Акция',
+    key: 'promotion',
+    render: (_, item) =>
+      item.promotionTitle ? (
+        <Flex vertical gap={2}>
+          <Tag color="red" style={{ width: 'fit-content' }}>
+            {item.promotionTitle}
+          </Tag>
+          {!!item.oldPrice && (
+            <Typography.Text delete type="secondary" style={{ fontSize: 12 }}>
+              {formatMoney(item.oldPrice)}
+            </Typography.Text>
+          )}
+        </Flex>
+      ) : (
+        '—'
+      ),
+  },
+  {
+    title: 'Себестоимость',
+    key: 'costTotal',
+    render: (_, item) =>
+      item.costPrice === undefined || item.costTotal === undefined
+        ? '—'
+        : `${formatMoney(item.costPrice)} · ${formatMoney(item.costTotal)}`,
+  },
+  {
+    title: 'Маржа',
+    key: 'margin',
+    render: (_, item) =>
+      item.costTotal === undefined ? '—' : formatMoney(String(Number(item.total) - Number(item.costTotal))),
+  },
 ];
 
 const Page = ({ model }: LazyPageProps<Model>) => {
@@ -83,15 +122,29 @@ const Page = ({ model }: LazyPageProps<Model>) => {
       </Card>
 
       <Card title="Оплата" size="small">
-        <Descriptions column={1} size="small">
-          <Descriptions.Item label="Товары">{formatMoney(group.itemsTotal)}</Descriptions.Item>
-          {/* Продавцу бэкенд отдаёт 0 — платформенная логистика его не касается,
-              но саму строку показываем только SUPER_ADMIN, чтобы не путать нулём. */}
-          {isSuperAdmin && <Descriptions.Item label="Доставка">{formatMoney(group.deliveryFee)}</Descriptions.Item>}
-          <Descriptions.Item label="Итого">
-            <Typography.Text strong>{formatMoney(group.total)}</Typography.Text> · наличными курьеру
-          </Descriptions.Item>
-        </Descriptions>
+        {isSuperAdmin ? (
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="Товары">{formatMoney(group.itemsTotal)}</Descriptions.Item>
+            <Descriptions.Item label="Доставка">{formatMoney(group.deliveryFee)}</Descriptions.Item>
+            <Descriptions.Item label="Итого">
+              <Typography.Text strong>{formatMoney(group.total)}</Typography.Text> · наличными курьеру
+            </Descriptions.Item>
+            {group.costTotal !== undefined && (
+              <Descriptions.Item label="Продавцам">{formatMoney(group.costTotal)}</Descriptions.Item>
+            )}
+            {group.margin !== undefined && (
+              <Descriptions.Item label="Маржа платформы">{formatMoney(group.margin)}</Descriptions.Item>
+            )}
+          </Descriptions>
+        ) : (
+          // Продавцу бэкенд отдаёт суммы по себестоимости и доставку 0: его деньги —
+          // это выплата от платформы, а не то, что курьер получит с покупателя.
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="К выплате">
+              <Typography.Text strong>{formatMoney(group.total)}</Typography.Text>
+            </Descriptions.Item>
+          </Descriptions>
+        )}
       </Card>
 
       {group.orders.map((order) => (
@@ -123,9 +176,20 @@ const OrderCard = ({ order, isSuperAdmin }: { order: Order; isSuperAdmin: boolea
       ) : undefined
     }
   >
-    <Table rowKey="id" dataSource={order.items} columns={ITEM_COLUMNS} pagination={false} size="small" />
-    <Flex justify="flex-end" style={{ marginTop: 12 }}>
-      <Typography.Text strong>Товары: {formatMoney(order.itemsTotal)}</Typography.Text>
+    <Table
+      rowKey="id"
+      dataSource={order.items}
+      columns={isSuperAdmin ? SUPER_ADMIN_ITEM_COLUMNS : ITEM_COLUMNS}
+      pagination={false}
+      size="small"
+    />
+    <Flex justify="flex-end" gap="middle" style={{ marginTop: 12 }}>
+      <Typography.Text strong>
+        {isSuperAdmin ? 'Товары' : 'К выплате'}: {formatMoney(order.itemsTotal)}
+      </Typography.Text>
+      {isSuperAdmin && order.costTotal !== undefined && (
+        <Typography.Text type="secondary">Продавцу: {formatMoney(order.costTotal)}</Typography.Text>
+      )}
     </Flex>
 
     {!!order.courierName && (

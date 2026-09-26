@@ -6,10 +6,10 @@ import { useUnit } from 'effector-react';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
 import { ListingFilters } from '@/features/listing/filter';
-import { StatusTag, type Listing } from '@/entities/listing';
+import { StatusTag, getPriceColumns, type Listing } from '@/entities/listing';
 import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
-import { formatDate, formatPrice } from '@/shared/lib/format';
+import { formatDate } from '@/shared/lib/format';
 import { withTitle } from '@/shared/ui/with-title';
 
 import { factory } from '../model';
@@ -75,11 +75,7 @@ const useColumns = (): TableProps<Listing>['columns'] => {
       key: 'category',
       render: (_, item) => item.catalogItem.category?.name ?? '—',
     },
-    {
-      title: 'Цена',
-      key: 'price',
-      render: (_, item) => formatPrice(item.price),
-    },
+    ...getPriceColumns(role === 'SUPER_ADMIN'),
     {
       title: 'Остаток',
       dataIndex: 'stock',

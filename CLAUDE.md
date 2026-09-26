@@ -257,7 +257,7 @@ SELLER получает только группы, где участвует, и
   в таблице показаны без доп. ролевых гейтов. `status` (`ListingStatus`) — обычное поле формы в обоих
   режимах: у листинга нет review-процесса и transition-map на бэкенде, значение принимается любое;
   `entities/listing.STATUS_LABELS` **без перевода** (значение = сырой enum, `DRAFT`/`ACTIVE`/`ARCHIVED`).
-  `price`/`stock` — числовые поля через `NumberField` (`shared/ui/form/number-field.tsx`, обёртка над
+  `costPrice`/`stock` — числовые поля через `NumberField` (`shared/ui/form/number-field.tsx`, обёртка над
   antd `InputNumber`) + `z.coerce.number()`. Нет изображения/баннера у листинга, поэтому
   `$editingListing` и `mutated` собраны по эталону каталога, но без ветки под `uploadXFx`: `$editingListing` — просто
   `sample({ clock: editTriggered, target: $editingListing })` (без инлайнового `.on()/.reset()`),
@@ -289,6 +289,46 @@ SELLER получает только группы, где участвует, и
 как у остальных денежных полей. `freeDeliveryThreshold` — тоже `NumberField`, но `number | null`:
 пустое поле = `null` = «порога нет» (в zod-схеме — `z.preprocess` до `z.union([z.null(), ...])`,
 голый `z.coerce.number()` превратил бы пустую строку в `0`, а не в `null`).
+Карточка «Ценообразование» — `markupPercent` (в UI проценты, в API `markupBps`, 20% = 2000) и
+`priceRoundingStep` (в UI сумы, в API тиины). Их смена пересчитывает цены всей витрины на бэкенде,
+поэтому `updateFx` шлёт эти поля **только если они изменились** относительно `$settings`.
+
+## Цены (себестоимость и розница)
+
+Листинг несёт две цены: `costPrice` (себестоимость — выплата продавцу, её вводят в форме
+`features/listing/creat-edit`) и `price` (розница на витрине). **Розницу считает бэкенд**
+(наценка из настроек + правила цены), в форме её нет, и формула на клиенте не дублируется.
+`price`, `appliedRule` у листинга и `costPrice`/`costTotal`/`margin` у заказа приходят **только
+`SUPER_ADMIN`** (в типах — опциональные поля). `SELLER` видит лишь себестоимость: в заказах бэкенд
+кладёт её прямо в `price`/`total`/`itemsTotal`, поэтому разметка для него не ветвится — только
+подписи («К выплате»). Колонки цены в таблицах листингов — `getPriceColumns(showRetail)` из
+`entities/listing`, не копировать по страницам (на акции там же — зачёркнутая `oldPrice` и тег
+акции; у позиций заказа — колонка «Акция» из снапшота `promotionTitle`).
+
+## Акции и правила цены
+
+Оба раздела — только `SUPER_ADMIN`, бэкенд — `stealth-backend/src/promotions/` и
+`src/pricing/price-rules.service.ts`. Сохранение пересчитывает цены на бэкенде сразу; формулу
+цены клиент не дублирует (в форме акции — только прикидка «≈» без округления).
+
+- **Акции** (`pages/promotions`, `features/promotion/{creat-edit,filter}`,
+  `entities/promotion`) — видимая покупателю скидка: зачёркнутая «было» и плашка «−N%» в
+  мобилке. Форма в `Drawer`: вкладки RU/UZ/EN (название + описание, пустые UZ/EN не шлются),
+  скидка в % (в API bps: `percentToBps`/`bpsToPercent` из `entities/promotion`), период,
+  «Включена» и состав — поиск по `/admin/listings` + `useFieldArray` с таблицей позиций, у
+  каждой может быть своя скидка (пусто = скидка акции). Список отдаёт акцию без состава —
+  редактирование догружает деталь (`GET /promotions/:id`), подписи позиций держит
+  `$knownListings` (тот же приём, что `$knownCustomers` в рассылках). `PATCH` шлёт `items`
+  целиком — состав заменяется. Скидку оплачивает маржа платформы, выплата продавцу не меняется.
+- **Правила цены** (`pages/price-rules`, `features/price-rule/{creat-edit,filter}`,
+  `entities/price-rule`) — скрытая наценка/скидка/фикс по области (продавец, категория, позиция,
+  листинг — четыре селекта с серверным поиском, `createScopeSelect` в модели). Значение: % для
+  `*_PERCENT` (в API bps), сумы для `FIXED_PRICE` (в API тиины). Очищенное поле уходит `null`
+  явно: в `PATCH` `undefined` = «не трогать».
+- **Даты — дни, не моменты.** `DateField` (`shared/ui/form`, antd `DatePicker` без времени,
+  значение — строка `YYYY-MM-DD` или `null`; `dayjs` — прямая зависимость ради него). Первый и
+  последний день включительно; по датам цены меняются в 00:00 по Ташкенту, это пишем подсказкой
+  под полями.
 
 ## Версии приложения
 

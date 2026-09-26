@@ -1,11 +1,12 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { Modal } from 'antd';
+import { Modal, Typography } from 'antd';
 import { useUnit } from 'effector-react';
 import { useForm } from 'react-hook-form';
 import { useId } from 'react';
 
 import { listingConfig } from '@/entities/listing';
 import { userModel } from '@/entities/user';
+import { formatPrice } from '@/shared/lib/format';
 import { NumberField, SelectField } from '@/shared/ui/form';
 
 import * as model from '../model';
@@ -94,7 +95,25 @@ export const ListingModal = () => {
             }}
           />
         )}
-        <NumberField control={form.control} name="price" label="Цена, сум" min={0} step={0.01} required />
+        <NumberField
+          control={form.control}
+          name="costPrice"
+          label="Себестоимость (выплата продавцу), сум"
+          min={0}
+          step={0.01}
+          required
+        />
+        {/* Розница приходит только SUPER_ADMIN и считается бэкендом (наценка + правила) —
+            формулу на клиенте не дублируем, показываем сохранённое значение. */}
+        {role === 'SUPER_ADMIN' && editingListing?.price !== undefined && (
+          <Typography.Paragraph type="secondary">
+            Цена на витрине: {formatPrice(editingListing.price)} сум
+            {editingListing.appliedRule ? ` · правило «${editingListing.appliedRule.name}»` : ' · базовая наценка'}
+            {editingListing.promotion &&
+              !!editingListing.oldPrice &&
+              ` · акция «${editingListing.promotion.title}», без неё ${formatPrice(editingListing.oldPrice)} сум`}
+          </Typography.Paragraph>
+        )}
         <NumberField control={form.control} name="stock" label="Остаток" min={0} step={1} required />
         <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
       </form>

@@ -161,17 +161,23 @@ export interface FindCatalogParams extends CursorPageParams {
   freeDelivery?: boolean;
 }
 
-/** Платформенный тариф доставки — синглтон, правит только SUPER_ADMIN. */
+/** Платформенный тариф доставки и наценка — синглтон, правит только SUPER_ADMIN. */
 export interface PlatformSettings {
   /** В тиинах (1 сум = 100 тиинов). */
   deliveryFee: number;
   /** В тиинах; `null` — бесплатной доставки по порогу нет. */
   freeDeliveryThreshold: number | null;
+  /** Базовая наценка поверх себестоимости, в базисных пунктах (2000 = 20%). */
+  markupBps: number;
+  /** Шаг округления розничной цены вверх, в тиинах (100 = до целого сума). */
+  priceRoundingStep: number;
 }
 
 export interface UpdatePlatformSettingsPayload {
   deliveryFee?: number;
   freeDeliveryThreshold?: number | null;
+  markupBps?: number;
+  priceRoundingStep?: number;
 }
 
 export type AppPlatform = 'IOS' | 'ANDROID';
@@ -197,8 +203,16 @@ export type Listing = {
   seller?: Pick<Seller, 'id' | 'name'>;
   catalogItemId: string;
   catalogItem: CatalogItem;
-  /** В тиинах (1 сум = 100 тиинов). */
-  price: string;
+  /** Себестоимость — столько платформа должна продавцу. В тиинах (1 сум = 100 тиинов). */
+  costPrice: string;
+  /** Розница на витрине, в тиинах. Считает бэкенд; приходит только SUPER_ADMIN. */
+  price?: string;
+  /** Сработавшее правило цены; `null` — базовая наценка. Приходит только SUPER_ADMIN. */
+  appliedRule?: { id: string; name: string } | null;
+  /** Розница без акции (зачёркнутая «было»); `null` — не на акции. Только SUPER_ADMIN. */
+  oldPrice?: string | null;
+  /** Акция, давшая текущую цену. Только SUPER_ADMIN. */
+  promotion?: { id: string; title: string } | null;
   stock: number;
   status: ListingStatus;
   createdAt: string;
@@ -207,8 +221,8 @@ export type Listing = {
 
 export interface ListingPayload {
   catalogItemId: string;
-  /** В тиинах (1 сум = 100 тиинов). */
-  price: number;
+  /** Себестоимость в тиинах (1 сум = 100 тиинов). Розницу считает бэкенд. */
+  costPrice: number;
   stock: number;
   status?: ListingStatus;
   /** Только для SUPER_ADMIN (он не привязан к продавцу) и только при создании. */
@@ -219,9 +233,9 @@ export interface FindListingsParams extends CursorPageParams {
   search?: string;
   categoryId?: string;
   status?: ListingStatus;
-  /** В тиинах. */
+  /** В тиинах. У SUPER_ADMIN — по рознице, у SELLER — по себестоимости. */
   minPrice?: number;
-  /** В тиинах. */
+  /** В тиинах. У SUPER_ADMIN — по рознице, у SELLER — по себестоимости. */
   maxPrice?: number;
   /** Только для SUPER_ADMIN — SELLER всегда скоупится своим продавцом. */
   sellerId?: string;
@@ -309,9 +323,19 @@ export interface OrderItem {
   catalogItemName: string;
   catalogItemImageUrl: string | null;
   unit: string;
+  /** Розница. У SELLER сервер кладёт сюда себестоимость — розницу он не видит. */
   price: string;
   quantity: number;
+  /** Розница × количество (у SELLER — себестоимость × количество). */
   total: string;
+  /** Только SUPER_ADMIN. */
+  costPrice?: string;
+  /** Только SUPER_ADMIN. */
+  costTotal?: string;
+  /** Только SUPER_ADMIN: акция из снапшота позиции; `null` — без акции. */
+  promotionTitle?: string | null;
+  /** Только SUPER_ADMIN: розница без акции на момент оформления. */
+  oldPrice?: string | null;
   createdAt: string;
 }
 
@@ -329,9 +353,12 @@ export interface Order {
   orderNumber: number;
   seller: { id: string; name: string };
   status: OrderStatus;
-  /** Доля этого продавца. Доставка на заказ не раскладывается — она платформенная,
-   * посчитана один раз и живёт в OrderGroup.deliveryFee/total. */
+  /** Сумма товаров этого продавца: розница, у SELLER — себестоимость (к выплате).
+   * Доставка на заказ не раскладывается — она платформенная, посчитана один раз и
+   * живёт в OrderGroup.deliveryFee/total. */
   itemsTotal: string;
+  /** Выплата продавцу. Только SUPER_ADMIN. */
+  costTotal?: string;
   courierName: string | null;
   courierPhone: string | null;
   cancelReason: string | null;
@@ -365,6 +392,10 @@ export interface OrderGroup {
   ordersCount: number;
   createdAt: string;
   orders: Order[];
+  /** Сумма выплат продавцам по группе. Только SUPER_ADMIN. */
+  costTotal?: string;
+  /** itemsTotal − costTotal: маржа платформы на товарах. Только SUPER_ADMIN. */
+  margin?: string;
 }
 
 export interface FindOrdersParams extends CursorPageParams {
@@ -408,6 +439,8 @@ export interface MetricsOrders {
   orderCount: number;
   /** В тиинах (1 сум = 100 тиинов). Исключает CANCELLED. */
   revenue: number;
+  /** Маржа платформы: revenue − выплаты продавцам. В тиинах, исключает CANCELLED. */
+  margin: number;
   /** В тиинах (1 сум = 100 тиинов). */
   averageOrderValue: number;
   byStatus: MetricsOrdersByStatus[];
@@ -427,12 +460,16 @@ export interface MetricsOverview {
     orderCount: number;
     /** В тиинах (1 сум = 100 тиинов). */
     revenue: number;
+    /** Маржа платформы, в тиинах. */
+    margin: number;
   };
   allTime: {
     totalUsers: number;
     totalOrders: number;
     /** В тиинах (1 сум = 100 тиинов). */
     totalRevenue: number;
+    /** Маржа платформы, в тиинах. */
+    totalMargin: number;
     activeSellers: number;
     pendingCategories: number;
     pendingCatalogItems: number;
@@ -502,5 +539,115 @@ export interface Customer {
 }
 
 export interface FindCustomersParams extends CursorPageParams {
+  search?: string;
+}
+
+/** День `YYYY-MM-DD`: даты акций и правил цены — с точностью до дня, граница — 00:00 по Ташкенту. */
+export type BusinessDay = string;
+
+export type PromotionState = 'active' | 'scheduled' | 'ended' | 'disabled';
+
+/** Акция для покупателя. Скидки — в bps (2000 = −20%). Только SUPER_ADMIN. */
+export interface Promotion {
+  id: string;
+  /** RU — для таблиц. */
+  title: string;
+  translations: Translation<{ title: string; description: string | null }>[];
+  discountBps: number;
+  enabled: boolean;
+  /** Первый день; `null` — сразу. */
+  startDate: BusinessDay | null;
+  /** Последний день включительно; `null` — бессрочно. */
+  endDate: BusinessDay | null;
+  state: PromotionState;
+  itemsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PromotionItem {
+  listingId: string;
+  /** Своя скидка листинга, bps; `null` — скидка акции. */
+  discountBps: number | null;
+  listing: {
+    id: string;
+    name: string;
+    sellerName: string;
+    costPrice: string;
+    price: string;
+    oldPrice: string | null;
+    /** Сейчас цена листинга посчитана по этой акции. */
+    appliedHere: boolean;
+    stock: number;
+    status: ListingStatus;
+  };
+}
+
+export interface PromotionDetail extends Promotion {
+  items: PromotionItem[];
+}
+
+export interface PromotionPayload {
+  /** RU обязателен, остальные локали опциональны — пусто = не переведено. */
+  translations: { locale: Locale; title?: string; description?: string | null }[];
+  discountBps: number;
+  enabled: boolean;
+  startDate: BusinessDay | null;
+  endDate: BusinessDay | null;
+  /** Заменяет состав акции целиком. */
+  items: { listingId: string; discountBps: number | null }[];
+}
+
+export interface FindPromotionsParams extends CursorPageParams {
+  search?: string;
+  state?: PromotionState;
+}
+
+export type PriceRuleAction = 'MARKUP_PERCENT' | 'DISCOUNT_PERCENT' | 'FIXED_PRICE';
+
+/** Скрытое правило цены — покупатель его не видит. Только SUPER_ADMIN. */
+export interface PriceRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  priority: number;
+  action: PriceRuleAction;
+  /** bps для *_PERCENT, тийины для FIXED_PRICE. */
+  value: number;
+  sellerId: string | null;
+  seller: { id: string; name: string } | null;
+  categoryId: string | null;
+  category: { id: string; name: string } | null;
+  catalogItemId: string | null;
+  catalogItem: { id: string; name: string } | null;
+  listingId: string | null;
+  listing: { id: string; name: string } | null;
+  startDate: BusinessDay | null;
+  endDate: BusinessDay | null;
+  minStock: number | null;
+  maxStock: number | null;
+  /** Сколько листингов сейчас получили цену по правилу. */
+  appliedCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PriceRulePayload {
+  name: string;
+  enabled: boolean;
+  priority: number;
+  action: PriceRuleAction;
+  value: number;
+  sellerId: string | null;
+  categoryId: string | null;
+  catalogItemId: string | null;
+  listingId: string | null;
+  startDate: BusinessDay | null;
+  endDate: BusinessDay | null;
+  minStock: number | null;
+  maxStock: number | null;
+}
+
+export interface FindPriceRulesParams extends CursorPageParams {
   search?: string;
 }

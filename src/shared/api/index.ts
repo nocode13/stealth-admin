@@ -8,6 +8,8 @@ import { customer } from './customer';
 import { listing } from './listing';
 import { metrics } from './metrics';
 import { orders } from './orders';
+import { priceRule } from './price-rule';
+import { promotion } from './promotion';
 import { sellers } from './sellers';
 import { settings } from './settings';
 
@@ -20,6 +22,7 @@ export type {
   BroadcastAudienceCount,
   BroadcastAudiencePayload,
   BroadcastStatus,
+  BusinessDay,
   CatalogItem,
   CatalogItemMedia,
   CatalogItemPayload,
@@ -36,6 +39,8 @@ export type {
   FindCustomersParams,
   FindMetricsPeriodParams,
   FindOrdersParams,
+  FindPriceRulesParams,
+  FindPromotionsParams,
   Listing,
   ListingPayload,
   ListingStatus,
@@ -56,6 +61,14 @@ export type {
   PaymentMethod,
   PaymentStatus,
   PlatformSettings,
+  PriceRule,
+  PriceRuleAction,
+  PriceRulePayload,
+  Promotion,
+  PromotionDetail,
+  PromotionItem,
+  PromotionPayload,
+  PromotionState,
   ReviewStatus,
   Role,
   Seller,
@@ -81,6 +94,8 @@ export const api = {
   listing,
   metrics,
   orders,
+  priceRule,
+  promotion,
   sellers,
   settings,
 };

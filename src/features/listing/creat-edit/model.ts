@@ -15,7 +15,9 @@ import { toSum, toTiyin } from '@/shared/lib/currency/currency';
 
 export const schema = z.object({
   catalogItemId: z.string().min(1, 'Выберите товар'),
-  price: z.coerce.number().min(0, 'Цена не может быть отрицательной'),
+  // Себестоимость — столько платформа должна продавцу. Розницу считает бэкенд
+  // (наценка + правила), в форме её нет.
+  costPrice: z.coerce.number().min(0, 'Себестоимость не может быть отрицательной'),
   stock: z.coerce.number().int().min(0, 'Остаток не может быть отрицательным'),
   status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
   // Обязательность зависит от роли и режима (только SUPER_ADMIN + create),
@@ -27,7 +29,7 @@ export type FormValues = z.infer<typeof schema>;
 
 export const DEFAULT_VALUES: FormValues = {
   catalogItemId: '',
-  price: 0,
+  costPrice: 0,
   stock: 0,
   status: 'DRAFT',
   sellerId: '',
@@ -152,7 +154,7 @@ sample({
   clock: editTriggered,
   fn: (listing): FormValues => ({
     catalogItemId: listing.catalogItemId,
-    price: toSum(Number(listing.price)),
+    costPrice: toSum(Number(listing.costPrice)),
     stock: listing.stock,
     status: listing.status,
     sellerId: listing.sellerId,
@@ -167,7 +169,7 @@ export const createFx = attach({
       catalogItemId: values.catalogItemId,
       // `$formValues` — сырой снапшот из form.watch(), zod-коэрсия (z.coerce.number())
       // применяется только валидатором и до эффекта не доходит — приводим типы вручную.
-      price: toTiyin(Number(values.price)),
+      costPrice: toTiyin(Number(values.costPrice)),
       stock: Math.trunc(Number(values.stock)),
       status: values.status,
       // Продавцу sellerId проставляет бэкенд из сессии.
@@ -182,7 +184,7 @@ export const updateFx = attach({
     // sellerId в PATCH не отправляем: продавца у листинга менять нельзя.
     return api.listing.update(editing.id, {
       catalogItemId: values.catalogItemId,
-      price: toTiyin(Number(values.price)),
+      costPrice: toTiyin(Number(values.costPrice)),
       stock: Math.trunc(Number(values.stock)),
       status: values.status,
     });

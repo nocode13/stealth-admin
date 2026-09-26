@@ -19,6 +19,10 @@ const thresholdSchema = z.preprocess(
 export const schema = z.object({
   deliveryFee: z.coerce.number().min(0, 'Не может быть отрицательным'),
   freeDeliveryThreshold: thresholdSchema,
+  // В UI — проценты, в API — базисные пункты (20% = 2000).
+  markupPercent: z.coerce.number().min(0, 'Не может быть отрицательной').max(1000, 'Не больше 1000%'),
+  // В UI — сумы, в API — тиины.
+  priceRoundingStep: z.coerce.number().min(0.01, 'Минимум 0,01 сум'),
 });
 
 export type FormValues = z.infer<typeof schema>;
@@ -26,7 +30,11 @@ export type FormValues = z.infer<typeof schema>;
 export const DEFAULT_VALUES: FormValues = {
   deliveryFee: 0,
   freeDeliveryThreshold: null,
+  markupPercent: 20,
+  priceRoundingStep: 1,
 };
+
+const toBps = (percent: number) => Math.round(Number(percent) * 100);
 
 export const form = createForm<FormValues>();
 
@@ -35,6 +43,8 @@ export const validated = createEvent();
 const toFormValues = (settings: PlatformSettings): FormValues => ({
   deliveryFee: toSum(settings.deliveryFee),
   freeDeliveryThreshold: settings.freeDeliveryThreshold === null ? null : toSum(settings.freeDeliveryThreshold),
+  markupPercent: settings.markupBps / 100,
+  priceRoundingStep: toSum(settings.priceRoundingStep),
 });
 
 export const factory = ({ route }: LazyPageFactoryParams) => {
@@ -45,18 +55,25 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
 
   const fetchFx = createEffect(() => api.settings.get());
 
+  const $settings = createStore<PlatformSettings | null>(null);
+
   const updateFx = attach({
-    source: form.$formValues,
-    effect: (values: FormValues) =>
-      api.settings.update({
+    source: { values: form.$formValues, settings: $settings },
+    effect: ({ values, settings }) => {
+      const markupBps = toBps(values.markupPercent);
+      const priceRoundingStep = toTiyin(Number(values.priceRoundingStep));
+      // Наценку и округление шлём только если они изменились: их смена пересчитывает
+      // цены всей витрины на бэкенде, правка тарифа доставки этого делать не должна.
+      return api.settings.update({
         deliveryFee: toTiyin(values.deliveryFee),
         freeDeliveryThreshold: values.freeDeliveryThreshold === null ? null : toTiyin(values.freeDeliveryThreshold),
-      }),
+        markupBps: markupBps !== settings?.markupBps ? markupBps : undefined,
+        priceRoundingStep: priceRoundingStep !== settings?.priceRoundingStep ? priceRoundingStep : undefined,
+      });
+    },
   });
 
-  const $settings = createStore<PlatformSettings | null>(null)
-    .on(fetchFx.doneData, (_, settings) => settings)
-    .on(updateFx.doneData, (_, settings) => settings);
+  $settings.on(fetchFx.doneData, (_, settings) => settings).on(updateFx.doneData, (_, settings) => settings);
 
   sample({ clock: authorizedRoute.opened, target: fetchFx });
   sample({ clock: validated, target: updateFx });
