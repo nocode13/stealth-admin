@@ -37,6 +37,9 @@ export const routes = {
 
   broadcasts: createRoute(),
 
+  promotions: createRoute(),
+  priceRules: createRoute(),
+
   notFound: createRoute(),
   forbidden: createRoute(),
 };
@@ -67,6 +70,8 @@ export const routesMap = [
   { route: routes.settings, path: '/settings' },
   { route: routes.appVersions, path: '/app-versions' },
   { route: routes.broadcasts, path: '/broadcasts' },
+  { route: routes.promotions, path: '/promotions' },
+  { route: routes.priceRules, path: '/price-rules' },
 
   { route: routes.forbidden, path: '/forbidden' },
 ];

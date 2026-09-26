@@ -9,6 +9,8 @@ import {
   GlobalOutlined,
   MobileOutlined,
   NotificationOutlined,
+  PercentageOutlined,
+  CalculatorOutlined,
   SettingOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
@@ -80,6 +82,20 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
     icon: TeamOutlined,
   },
   {
+    route: routes.promotions,
+    label: 'Акции',
+    roles: ['SUPER_ADMIN'],
+    key: 'promotions',
+    icon: PercentageOutlined,
+  },
+  {
+    route: routes.priceRules,
+    label: 'Правила цены',
+    roles: ['SUPER_ADMIN'],
+    key: 'priceRules',
+    icon: CalculatorOutlined,
+  },
+  {
     route: routes.metrics,
     label: 'Метрики',
     roles: ['SUPER_ADMIN'],
@@ -122,6 +138,8 @@ export const $activeRoutes = combine({
   settings: routes.settings.$isOpened,
   appVersions: routes.appVersions.$isOpened,
   broadcasts: routes.broadcasts.$isOpened,
+  promotions: routes.promotions.$isOpened,
+  priceRules: routes.priceRules.$isOpened,
 }).map((routes) =>
   Object.entries(routes)
     .filter(([_, value]) => value)

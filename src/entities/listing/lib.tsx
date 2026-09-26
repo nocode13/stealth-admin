@@ -1,4 +1,4 @@
-import type { TableProps } from 'antd';
+import { Flex, Tag, Typography, type TableProps } from 'antd';
 
 import type { Listing } from '@/shared/api/types';
 import { formatPrice } from '@/shared/lib/format';
@@ -19,7 +19,24 @@ export const getPriceColumns = (showRetail: boolean): NonNullable<TableProps<Lis
         {
           title: 'Цена',
           key: 'price',
-          render: (_: unknown, item: Listing) => (item.price === undefined ? '—' : formatPrice(item.price)),
+          render: (_: unknown, item: Listing) => {
+            if (item.price === undefined) return '—';
+            if (!item.promotion || !item.oldPrice) return formatPrice(item.price);
+            // На акции: цена со скидкой, зачёркнутая обычная и название акции.
+            return (
+              <Flex vertical gap={2}>
+                <span>
+                  {formatPrice(item.price)}{' '}
+                  <Typography.Text delete type="secondary">
+                    {formatPrice(item.oldPrice)}
+                  </Typography.Text>
+                </span>
+                <Tag color="red" style={{ width: 'fit-content' }}>
+                  {item.promotion.title}
+                </Tag>
+              </Flex>
+            );
+          },
         },
         {
           title: 'Наценка',

@@ -23,6 +23,7 @@
     "atomic-router-react": "^0.12.1",
     "axios": "^1.18.1",
     "big.js": "^7.0.1",
+    "dayjs": "^1.11.21",
     "effector": "^23.4.4",
     "effector-react": "^23.3.0",
     "effector-refetch": "^0.13.0",

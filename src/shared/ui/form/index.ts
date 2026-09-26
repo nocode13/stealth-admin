@@ -10,4 +10,6 @@ export { SelectField } from './select-field';
 export type { SelectFieldProps } from './select-field';
 export { SwitchField } from './switch-field';
 export type { SwitchFieldProps } from './switch-field';
+export { DateField } from './date-field';
+export type { DateFieldProps } from './date-field';
 export type { FieldProps } from './types';

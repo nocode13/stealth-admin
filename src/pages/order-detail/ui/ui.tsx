@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- createLazyPage требует из модуля страницы экспорт component + createModel */
-import { Button, Card, Descriptions, Flex, Spin, Steps, Table, Typography, type TableProps } from 'antd';
+import { Button, Card, Descriptions, Flex, Spin, Steps, Table, Tag, Typography, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
 import { ChangeGroupStatus } from '@/features/order/change-group-status';
@@ -35,9 +35,28 @@ const ITEM_COLUMNS: TableProps<OrderItem>['columns'] = [
   { title: 'Сумма', key: 'total', render: (_, item) => formatMoney(item.total) },
 ];
 
-// SUPER_ADMIN: рядом с розницей — выплата продавцу и маржа платформы.
+// SUPER_ADMIN: рядом с розницей — акция (скидку оплатила маржа), выплата продавцу и маржа.
 const SUPER_ADMIN_ITEM_COLUMNS: TableProps<OrderItem>['columns'] = [
   ...(ITEM_COLUMNS ?? []),
+  {
+    title: 'Акция',
+    key: 'promotion',
+    render: (_, item) =>
+      item.promotionTitle ? (
+        <Flex vertical gap={2}>
+          <Tag color="red" style={{ width: 'fit-content' }}>
+            {item.promotionTitle}
+          </Tag>
+          {!!item.oldPrice && (
+            <Typography.Text delete type="secondary" style={{ fontSize: 12 }}>
+              {formatMoney(item.oldPrice)}
+            </Typography.Text>
+          )}
+        </Flex>
+      ) : (
+        '—'
+      ),
+  },
   {
     title: 'Себестоимость',
     key: 'costTotal',

@@ -109,6 +109,9 @@ export const ListingModal = () => {
           <Typography.Paragraph type="secondary">
             Цена на витрине: {formatPrice(editingListing.price)} сум
             {editingListing.appliedRule ? ` · правило «${editingListing.appliedRule.name}»` : ' · базовая наценка'}
+            {editingListing.promotion &&
+              !!editingListing.oldPrice &&
+              ` · акция «${editingListing.promotion.title}», без неё ${formatPrice(editingListing.oldPrice)} сум`}
           </Typography.Paragraph>
         )}
         <NumberField control={form.control} name="stock" label="Остаток" min={0} step={1} required />
