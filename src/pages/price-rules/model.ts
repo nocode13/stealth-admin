@@ -24,13 +24,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
 
   const fetchPageQuery = createQuery({
     effect: createEffect(
-      ({
-        cursor,
-        filters,
-      }: {
-        cursor?: string | null;
-        filters: StoreValue<typeof PriceRuleFilters.model.$filters>;
-      }) =>
+      ({ cursor, filters }: { cursor?: string | null; filters: StoreValue<typeof PriceRuleFilters.model.$filters> }) =>
         api.priceRule.findAll({
           cursor: cursor || undefined,
           limit: PAGE_SIZE,
