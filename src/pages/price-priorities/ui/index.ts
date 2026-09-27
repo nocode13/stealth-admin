@@ -4,11 +4,11 @@ import { createLazyPage } from '@/shared/lib/create-lazy-page';
 import { withSuspense } from '@/shared/ui/with-suspense';
 
 const load = () => import('./ui');
-const route = routes.priceRules;
+const route = routes.pricePriorities;
 
 const Page = createLazyPage({ route, load });
 
-export const PriceRules = {
+export const PricePriorities = {
   route,
   view: withSuspense(Page),
   layout: Layout,

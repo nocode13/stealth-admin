@@ -16,8 +16,14 @@ import { toSum, toTiyin } from '@/shared/lib/currency/currency';
 export const schema = z.object({
   catalogItemId: z.string().min(1, 'Выберите товар'),
   // Себестоимость — столько платформа должна продавцу. Розницу считает бэкенд
-  // (наценка + правила), в форме её нет.
+  // (наценка + акции), в форме её нет.
   costPrice: z.coerce.number().min(0, 'Себестоимость не может быть отрицательной'),
+  // Своя наценка, % — только SUPER_ADMIN. Пусто = null = базовая ступенчатая, а не 0:
+  // z.coerce.number() иначе молча превратил бы пустое поле в 0% (как порог в настройках).
+  customMarkupPercent: z.preprocess(
+    (value) => (value === '' || value === undefined ? null : value),
+    z.union([z.null(), z.coerce.number().min(0, 'Не может быть отрицательной').max(1000, 'Не больше 1000%')]),
+  ),
   stock: z.coerce.number().int().min(0, 'Остаток не может быть отрицательным'),
   status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
   // Обязательность зависит от роли и режима (только SUPER_ADMIN + create),
@@ -30,12 +36,17 @@ export type FormValues = z.infer<typeof schema>;
 export const DEFAULT_VALUES: FormValues = {
   catalogItemId: '',
   costPrice: 0,
+  customMarkupPercent: null,
   stock: 0,
   status: 'DRAFT',
   sellerId: '',
 };
 
 const $isSuperAdmin = userModel.$role.map((role) => role === 'SUPER_ADMIN');
+
+// В UI — проценты, в API — базисные пункты (35% = 3500); null — базовая наценка.
+const toMarkupBps = (percent: FormValues['customMarkupPercent']) =>
+  percent === null ? null : Math.round(Number(percent) * 100);
 
 export const form = createForm<FormValues>();
 
@@ -155,6 +166,8 @@ sample({
   fn: (listing): FormValues => ({
     catalogItemId: listing.catalogItemId,
     costPrice: toSum(Number(listing.costPrice)),
+    customMarkupPercent:
+      listing.customMarkupBps === null || listing.customMarkupBps === undefined ? null : listing.customMarkupBps / 100,
     stock: listing.stock,
     status: listing.status,
     sellerId: listing.sellerId,
@@ -174,12 +187,14 @@ export const createFx = attach({
       status: values.status,
       // Продавцу sellerId проставляет бэкенд из сессии.
       sellerId: isSuperAdmin ? values.sellerId : undefined,
+      // Свою наценку бэкенд принимает только от SUPER_ADMIN (продавцу — 403).
+      customMarkupBps: isSuperAdmin ? toMarkupBps(values.customMarkupPercent) : undefined,
     }),
 });
 
 export const updateFx = attach({
-  source: { values: form.$formValues, editing: $editingListing },
-  effect: ({ values, editing }) => {
+  source: { values: form.$formValues, editing: $editingListing, isSuperAdmin: $isSuperAdmin },
+  effect: ({ values, editing, isSuperAdmin }) => {
     if (!editing) throw new Error('No listing');
     // sellerId в PATCH не отправляем: продавца у листинга менять нельзя.
     return api.listing.update(editing.id, {
@@ -187,6 +202,7 @@ export const updateFx = attach({
       costPrice: toTiyin(Number(values.costPrice)),
       stock: Math.trunc(Number(values.stock)),
       status: values.status,
+      customMarkupBps: isSuperAdmin ? toMarkupBps(values.customMarkupPercent) : undefined,
     });
   },
 });

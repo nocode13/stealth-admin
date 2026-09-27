@@ -18,7 +18,7 @@ import { AppVersions } from './app-versions';
 import { Team } from './team';
 import { Broadcasts } from './broadcasts';
 import { Promotions } from './promotions';
-import { PriceRules } from './price-rules';
+import { PricePriorities } from './price-priorities';
 
 export const Pages = createRoutesView({
   routes: [
@@ -38,7 +38,7 @@ export const Pages = createRoutesView({
     AppVersions,
     Broadcasts,
     Promotions,
-    PriceRules,
+    PricePriorities,
     NotFound,
     Forbidden,
   ],
