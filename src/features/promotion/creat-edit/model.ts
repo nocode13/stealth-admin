@@ -22,7 +22,9 @@ const promoPrice = z
   .number({ error: 'Укажите цену' })
   .positive('Больше нуля')
   .nullable()
-  .refine((value) => value !== null, 'Укажите цену');
+  // Явный `: boolean` — иначе TS выведет type predicate, zod v4 сузит тип до number,
+  // и пустую строку состава (`promoPrice: null`) нельзя будет добавить.
+  .refine((value: number | null): boolean => value !== null, 'Укажите цену');
 
 const optionalText = (max: number) => z.string().max(max, `Максимум ${max} символов`).optional();
 
