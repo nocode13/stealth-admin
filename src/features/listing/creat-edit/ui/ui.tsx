@@ -1,11 +1,12 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Modal, Typography } from 'antd';
 import { useUnit } from 'effector-react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useId } from 'react';
 
 import { listingConfig } from '@/entities/listing';
 import { userModel } from '@/entities/user';
+import { formatAmount } from '@/shared/lib/currency/currency';
 import { formatPrice } from '@/shared/lib/format';
 import { NumberField, SelectField } from '@/shared/ui/form';
 
@@ -52,6 +53,15 @@ export const ListingModal = () => {
   });
   model.form.useBindFormWithModel({ form });
   const statusOptions = listingConfig.useStatusOptions();
+  const [costPrice, customMarkupPercent] = useWatch({
+    control: form.control,
+    name: ['costPrice', 'customMarkupPercent'],
+  });
+  // Прикидка для подсказки, без округления — точную розницу считает бэкенд после сохранения.
+  const customEstimate =
+    customMarkupPercent !== null && customMarkupPercent !== undefined && String(customMarkupPercent) !== ''
+      ? formatAmount(Math.ceil(Number(costPrice) * 100 * (1 + Number(customMarkupPercent) / 100)))
+      : null;
 
   return (
     <Modal
@@ -103,12 +113,32 @@ export const ListingModal = () => {
           step={0.01}
           required
         />
-        {/* Розница приходит только SUPER_ADMIN и считается бэкендом (наценка + правила) —
+        {/* Своя наценка — рычаг платформы: поле и значение видит только SUPER_ADMIN,
+            продавцу бэкенд его не отдаёт и не принимает. */}
+        {role === 'SUPER_ADMIN' && (
+          <>
+            <NumberField
+              control={form.control}
+              name="customMarkupPercent"
+              label="Своя наценка, %"
+              placeholder="Базовая ступенчатая"
+              min={0}
+              step={0.01}
+            />
+            <Typography.Paragraph type="secondary" style={{ marginTop: -12 }}>
+              {customEstimate
+                ? `Цена без акции ≈ ${customEstimate} сум (до округления). Сработает, если в «Приоритетах цены» стоит выше базовой наценки.`
+                : 'Пусто — базовая ступенчатая наценка из настроек.'}
+            </Typography.Paragraph>
+          </>
+        )}
+        {/* Розница приходит только SUPER_ADMIN и считается бэкендом (наценка + акции) —
             формулу на клиенте не дублируем, показываем сохранённое значение. */}
         {role === 'SUPER_ADMIN' && editingListing?.price !== undefined && (
           <Typography.Paragraph type="secondary">
             Цена на витрине: {formatPrice(editingListing.price)} сум
-            {editingListing.appliedRule ? ` · правило «${editingListing.appliedRule.name}»` : ' · базовая наценка'}
+            {editingListing.priceSource === 'LISTING_MARKUP' && ' · своя наценка'}
+            {editingListing.priceSource === 'BASE_MARKUP' && ' · базовая наценка'}
             {editingListing.promotion &&
               !!editingListing.oldPrice &&
               ` · акция «${editingListing.promotion.title}», без неё ${formatPrice(editingListing.oldPrice)} сум`}

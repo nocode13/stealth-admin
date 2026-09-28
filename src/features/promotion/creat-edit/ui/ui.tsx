@@ -6,8 +6,9 @@ import { useId } from 'react';
 import { Controller, useFieldArray, useForm, useWatch, type FieldErrors } from 'react-hook-form';
 
 import type { Locale } from '@/shared/api';
+import { toTiyin } from '@/shared/lib/currency/currency';
 import { formatPrice } from '@/shared/lib/format';
-import { DateField, NumberField, SwitchField, TextAreaField, TextField } from '@/shared/ui/form';
+import { DateField, SwitchField, TextAreaField, TextField } from '@/shared/ui/form';
 
 import * as model from '../model';
 
@@ -20,14 +21,18 @@ const LOCALES: { key: Locale; suffix: 'Ru' | 'Uz' | 'En' }[] = [
 const hasLocaleErrors = (errors: FieldErrors<model.FormValues>, suffix: string) =>
   Object.keys(errors).some((key) => key.endsWith(suffix));
 
+/** Обычная розница листинга в тиинах: без акции, если он сейчас на какой-то акции. */
+const regularPrice = (listing: model.ListingInfo) => Number(listing.oldPrice ?? listing.price) || null;
+
 /**
- * Прикидка цены по акции — только для подсказки в форме: скидка от обычной розницы,
- * не ниже себестоимости. Точную цену (с округлением) считает бэкенд после сохранения.
+ * Скидка цены по акции от обычной розницы, % — для подсказки в форме. Тот же расчёт
+ * бэкенд отдаёт в `discountBps` после сохранения; null — цена по акции не ниже обычной.
  */
-const estimatePromoPrice = (listing: model.ListingInfo, percent: number) => {
-  const regular = Number(listing.oldPrice ?? listing.price);
-  if (!regular) return null;
-  return String(Math.max(Math.round(regular * (1 - percent / 100)), Number(listing.costPrice)));
+const discountPercent = (listing: model.ListingInfo, promoPriceSum: number) => {
+  const regular = regularPrice(listing);
+  const promo = toTiyin(promoPriceSum);
+  if (!regular || promo >= regular) return null;
+  return Math.round(((regular - promo) / regular) * 100);
 };
 
 export const PromotionDrawer = () => {
@@ -68,7 +73,7 @@ export const PromotionDrawer = () => {
   model.form.useBindFormWithModel({ form });
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' });
-  const [discountPercent, items] = useWatch({ control: form.control, name: ['discountPercent', 'items'] });
+  const items = useWatch({ control: form.control, name: 'items' });
   const errors = form.formState.errors;
 
   const selectedIds = new Set(items.map((item) => item.listingId));
@@ -132,21 +137,10 @@ export const PromotionDrawer = () => {
           />
 
           <Row gutter={16}>
-            <Col xs={24} md={6}>
-              <NumberField
-                control={form.control}
-                name="discountPercent"
-                label="Скидка, %"
-                min={model.MIN_PERCENT}
-                max={model.MAX_PERCENT}
-                step={1}
-                required
-              />
-            </Col>
-            <Col xs={24} md={6}>
+            <Col xs={24} md={8}>
               <DateField control={form.control} name="startDate" label="Первый день" placeholder="Сразу" />
             </Col>
-            <Col xs={24} md={6}>
+            <Col xs={24} md={8}>
               <DateField
                 control={form.control}
                 name="endDate"
@@ -154,14 +148,16 @@ export const PromotionDrawer = () => {
                 placeholder="Бессрочно"
               />
             </Col>
-            <Col xs={24} md={6}>
+            <Col xs={24} md={8}>
               <Typography.Text style={{ display: 'block', marginBottom: 6 }}>Статус</Typography.Text>
               <SwitchField control={form.control} name="enabled" label="Включена" />
             </Col>
           </Row>
           <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
-            По датам цены меняются в 00:00 по Ташкенту. Сохранение применяется сразу. Скидка считается от обычной цены и
-            не опускает её ниже себестоимости — продавец получает столько же, разницу оплачивает маржа платформы.
+            По датам цены меняются в 00:00 по Ташкенту. Сохранение применяется сразу. У каждой позиции своя цена по
+            акции, процент скидки считается сам от обычной цены. Цена не может быть ниже себестоимости — продавец
+            получает столько же, разницу оплачивает маржа платформы. Позиция со своей наценкой получит акцию, только
+            если в «Приоритетах цены» акция стоит выше.
           </Typography.Paragraph>
 
           <Typography.Title level={5}>
@@ -180,7 +176,8 @@ export const PromotionDrawer = () => {
             loading={listingsFetching}
             notFoundContent={listingsFetching ? 'Поиск…' : 'Ничего не нашли'}
             onChange={(listingId: string | null) => {
-              if (listingId) append({ listingId, discountPercent: null });
+              // Цену по акции админ вводит сам — пустое поле подсветит валидация.
+              if (listingId) append({ listingId, promoPrice: null });
             }}
             size="large"
             style={{ width: '100%', marginBottom: 12 }}
@@ -231,36 +228,53 @@ export const PromotionDrawer = () => {
                 },
               },
               {
-                title: 'Своя скидка, %',
-                key: 'discountPercent',
-                width: 140,
-                render: (_, _field, index) => (
+                title: 'Цена по акции, сум',
+                key: 'promoPrice',
+                width: 170,
+                render: (_, field, index) => (
                   <Controller
                     control={form.control}
-                    name={`items.${index}.discountPercent`}
-                    render={({ field, fieldState }) => (
-                      <InputNumber
-                        value={field.value}
-                        onChange={(value) => field.onChange(value ?? null)}
-                        onBlur={field.onBlur}
-                        min={model.MIN_PERCENT}
-                        max={model.MAX_PERCENT}
-                        placeholder={String(discountPercent ?? '')}
-                        status={fieldState.error ? 'error' : undefined}
-                        style={{ width: '100%' }}
-                      />
-                    )}
+                    name={`items.${index}.promoPrice`}
+                    render={({ field: input, fieldState }) => {
+                      const belowCost = model.isBelowCost(knownListings[field.listingId], input.value);
+                      return (
+                        <>
+                          <InputNumber
+                            value={input.value}
+                            onChange={(value) => input.onChange(value ?? null)}
+                            onBlur={input.onBlur}
+                            min={0}
+                            step={1000}
+                            status={fieldState.error || belowCost ? 'error' : undefined}
+                            style={{ width: '100%' }}
+                          />
+                          {(!!fieldState.error || belowCost) && (
+                            <Typography.Text type="danger" style={{ display: 'block', fontSize: 12 }}>
+                              {belowCost ? 'Ниже себестоимости' : fieldState.error?.message}
+                            </Typography.Text>
+                          )}
+                        </>
+                      );
+                    }}
                   />
                 ),
               },
               {
-                title: 'Цена по акции ≈',
-                key: 'estimate',
+                title: 'Скидка ≈',
+                key: 'discount',
                 render: (_, field, index) => {
                   const listing = knownListings[field.listingId];
-                  const percent = items[index]?.discountPercent ?? discountPercent;
-                  const estimate = listing && percent ? estimatePromoPrice(listing, percent) : null;
-                  return estimate ? formatPrice(estimate) : '—';
+                  const promo = items[index]?.promoPrice;
+                  if (!listing || promo === null || promo === undefined) return '—';
+                  const percent = discountPercent(listing, Number(promo));
+                  // Не ниже обычной — движок акцию не применит (фейковое «было» запрещено).
+                  return percent === null ? (
+                    <Typography.Text type="warning" style={{ fontSize: 12 }}>
+                      Не ниже обычной — акция не применится
+                    </Typography.Text>
+                  ) : (
+                    `−${percent}%`
+                  );
                 },
               },
               {

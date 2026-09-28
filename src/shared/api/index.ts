@@ -8,7 +8,7 @@ import { customer } from './customer';
 import { listing } from './listing';
 import { metrics } from './metrics';
 import { orders } from './orders';
-import { priceRule } from './price-rule';
+import { pricePriority } from './price-priority';
 import { promotion } from './promotion';
 import { sellers } from './sellers';
 import { settings } from './settings';
@@ -39,7 +39,6 @@ export type {
   FindCustomersParams,
   FindMetricsPeriodParams,
   FindOrdersParams,
-  FindPriceRulesParams,
   FindPromotionsParams,
   Listing,
   ListingPayload,
@@ -47,6 +46,7 @@ export type {
   Locale,
   LocalizedText,
   LoginPayload,
+  MarkupTier,
   MetricsCatalog,
   MetricsOrders,
   MetricsOrdersByStatus,
@@ -61,9 +61,7 @@ export type {
   PaymentMethod,
   PaymentStatus,
   PlatformSettings,
-  PriceRule,
-  PriceRuleAction,
-  PriceRulePayload,
+  PriceSource,
   Promotion,
   PromotionDetail,
   PromotionItem,
@@ -94,7 +92,7 @@ export const api = {
   listing,
   metrics,
   orders,
-  priceRule,
+  pricePriority,
   promotion,
   sellers,
   settings,

@@ -46,7 +46,17 @@ export const getPriceColumns = (showRetail: boolean): NonNullable<TableProps<Lis
             const cost = Number(item.costPrice);
             const markup = Number(item.price) - cost;
             const percent = cost > 0 ? ` (${Math.round((markup / cost) * 100)}%)` : '';
-            return `${formatPrice(String(markup))}${percent}`;
+            const text = `${formatPrice(String(markup))}${percent}`;
+            if (item.customMarkupBps === null || item.customMarkupBps === undefined) return text;
+            // Своя наценка позиции вместо базовой ступенчатой — видно сразу в таблице.
+            return (
+              <Flex vertical gap={2}>
+                <span>{text}</span>
+                <Tag color="blue" style={{ width: 'fit-content' }}>
+                  своя {item.customMarkupBps / 100}%
+                </Tag>
+              </Flex>
+            );
           },
         },
       ]

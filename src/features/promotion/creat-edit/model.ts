@@ -1,11 +1,12 @@
-import { attach, createEffect, createEvent, createStore, merge, restore, sample, split } from 'effector';
+import { attach, combine, createEffect, createEvent, createStore, merge, restore, sample, split } from 'effector';
 import { createQuery } from 'effector-refetch';
-import { debounce, delay, or } from 'patronum';
+import { debounce, delay, not, or } from 'patronum';
 import { z } from 'zod/v4';
 
 import type { Listing } from '@/entities/listing';
-import { bpsToPercent, percentToBps, type Promotion, type PromotionDetail } from '@/entities/promotion';
+import type { Promotion, PromotionDetail } from '@/entities/promotion';
 import { api, type PromotionPayload } from '@/shared/api';
+import { toSum, toTiyin } from '@/shared/lib/currency/currency';
 import { createDisclosure } from '@/shared/lib/disclosure';
 import { createForm } from '@/shared/lib/form';
 import { message } from '@/shared/lib/message';
@@ -13,13 +14,17 @@ import { message } from '@/shared/lib/message';
 /** Лимиты — зеркало `stealth-backend/src/promotions/dto/promotion.dto.ts`. */
 export const TITLE_MAX = 80;
 export const DESCRIPTION_MAX = 500;
-export const MIN_PERCENT = 1;
-export const MAX_PERCENT = 99;
 
-const percent = z
-  .number({ error: 'Укажите скидку' })
-  .min(MIN_PERCENT, `От ${MIN_PERCENT}%`)
-  .max(MAX_PERCENT, `До ${MAX_PERCENT}%`);
+// Цена по акции, сум. Нижнюю границу (себестоимость) схема не знает — её проверяет
+// $belowCost ниже по $knownListings, а окончательно — бэкенд (400).
+// null — позицию только что добавили, цену ещё не ввели.
+const promoPrice = z
+  .number({ error: 'Укажите цену' })
+  .positive('Больше нуля')
+  .nullable()
+  // Явный `: boolean` — иначе TS выведет type predicate, zod v4 сузит тип до number,
+  // и пустую строку состава (`promoPrice: null`) нельзя будет добавить.
+  .refine((value: number | null): boolean => value !== null, 'Укажите цену');
 
 const optionalText = (max: number) => z.string().max(max, `Максимум ${max} символов`).optional();
 
@@ -31,14 +36,11 @@ export const schema = z
     descriptionRu: optionalText(DESCRIPTION_MAX),
     descriptionUz: optionalText(DESCRIPTION_MAX),
     descriptionEn: optionalText(DESCRIPTION_MAX),
-    discountPercent: percent,
     enabled: z.boolean(),
     // Дни `YYYY-MM-DD` (граница — 00:00 по Ташкенту); null — без ограничения.
     startDate: z.string().nullable(),
     endDate: z.string().nullable(),
-    items: z
-      .array(z.object({ listingId: z.string(), discountPercent: percent.nullable() }))
-      .min(1, 'Добавьте хотя бы одну позицию'),
+    items: z.array(z.object({ listingId: z.string(), promoPrice })).min(1, 'Добавьте хотя бы одну позицию'),
   })
   .superRefine((values, ctx) => {
     // Строки YYYY-MM-DD сравниваются лексикографически так же, как даты.
@@ -56,7 +58,6 @@ export const DEFAULT_VALUES: FormValues = {
   descriptionRu: '',
   descriptionUz: '',
   descriptionEn: '',
-  discountPercent: 10,
   enabled: true,
   startDate: null,
   endDate: null,
@@ -107,14 +108,10 @@ const toFormValues = (p: PromotionDetail): FormValues => ({
   descriptionRu: pickTranslation(p, 'RU')?.description ?? '',
   descriptionUz: pickTranslation(p, 'UZ')?.description ?? '',
   descriptionEn: pickTranslation(p, 'EN')?.description ?? '',
-  discountPercent: bpsToPercent(p.discountBps),
   enabled: p.enabled,
   startDate: p.startDate,
   endDate: p.endDate,
-  items: p.items.map((item) => ({
-    listingId: item.listingId,
-    discountPercent: item.discountBps === null ? null : bpsToPercent(item.discountBps),
-  })),
+  items: p.items.map((item) => ({ listingId: item.listingId, promoPrice: toSum(item.promoPrice) })),
 });
 
 /** Пустые UZ/EN не отправляем — бэкенд подставит RU. */
@@ -124,14 +121,10 @@ const toPayload = (values: FormValues): PromotionPayload => ({
     { locale: 'UZ', title: values.titleUz?.trim() || undefined, description: values.descriptionUz?.trim() || null },
     { locale: 'EN', title: values.titleEn?.trim() || undefined, description: values.descriptionEn?.trim() || null },
   ],
-  discountBps: percentToBps(values.discountPercent),
   enabled: values.enabled,
   startDate: values.startDate,
   endDate: values.endDate,
-  items: values.items.map((item) => ({
-    listingId: item.listingId,
-    discountBps: item.discountPercent === null ? null : percentToBps(item.discountPercent),
-  })),
+  items: values.items.map((item) => ({ listingId: item.listingId, promoPrice: toTiyin(Number(item.promoPrice)) })),
 });
 
 export const form = createForm<FormValues>();
@@ -231,8 +224,25 @@ sample({ clock: deleteRequested, target: deleteFx });
 export const $mutating = or(createFx.pending, updateFx.pending);
 export const mutated = merge([createFx.done, updateFx.done, deleteFx.done]);
 
+/** Цена по акции ниже себестоимости — скидку платит маржа платформы, продавец не должен терять. */
+export const isBelowCost = (listing: ListingInfo | undefined, promoPriceSum: number | null | undefined) =>
+  !!listing &&
+  promoPriceSum !== null &&
+  promoPriceSum !== undefined &&
+  toTiyin(Number(promoPriceSum)) < Number(listing.costPrice);
+
+const $belowCost = combine(form.$formValues, $knownListings, (values, known) =>
+  (values?.items ?? []).some((item) => isBelowCost(known[item.listingId], item.promoPrice)),
+);
+
+message({
+  clock: sample({ clock: validated, filter: $belowCost }),
+  type: 'error',
+  content: 'Цена по акции ниже себестоимости',
+});
+
 split({
-  source: validated,
+  source: sample({ clock: validated, filter: not($belowCost) }),
   match: $mode,
   cases: {
     create: createFx,

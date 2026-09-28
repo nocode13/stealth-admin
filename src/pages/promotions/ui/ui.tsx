@@ -57,8 +57,10 @@ const COLUMNS: TableProps<Promotion>['columns'] = [
   {
     title: 'Скидка',
     key: 'discount',
-    render: (_, promotion) => `−${bpsToPercent(promotion.discountBps)}%`,
-    width: 100,
+    // Цена по акции у каждой позиции своя — показываем наибольшую скидку по составу.
+    render: (_, promotion) =>
+      promotion.maxDiscountBps === null ? '—' : `до −${Math.round(bpsToPercent(promotion.maxDiscountBps))}%`,
+    width: 110,
   },
   {
     title: 'Период',
