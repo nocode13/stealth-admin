@@ -209,12 +209,27 @@ export interface AppVersion {
 
 export type UpdateAppVersionPayload = Partial<Omit<AppVersion, 'platform' | 'updatedAt'>>;
 
-export type Listing = {
+/**
+ * Атрибуты варианта листинга (одна позиция каталога — несколько вариантов у продавца).
+ * `null` — не указано. Подпись собирает `entities/listing.formatVariant`.
+ */
+export type ListingVariant = {
+  /** Росток. */
+  seedling: boolean;
+  /** Объём горшка, мл (0,5 л = 500). */
+  potVolumeMl: number | null;
+  stemCount: number | null;
+  heightCm: number | null;
+};
+
+export type Listing = ListingVariant & {
   id: string;
   sellerId: string;
   seller?: Pick<Seller, 'id' | 'name'>;
   catalogItemId: string;
   catalogItem: CatalogItem;
+  /** Своя галерея варианта (все статусы). Пустая — на витрине фото позиции каталога. */
+  ownMedia: CatalogItemMedia[];
   /** Себестоимость — столько платформа должна продавцу. В тиинах (1 сум = 100 тиинов). */
   costPrice: string;
   /** Розница на витрине, в тиинах. Считает бэкенд; приходит только SUPER_ADMIN. */
@@ -243,6 +258,11 @@ export interface ListingPayload {
   sellerId?: string;
   /** Только для SUPER_ADMIN: своя наценка, bps; `null` — базовая. */
   customMarkupBps?: number | null;
+  seedling?: boolean;
+  /** `null` — снять значение (в PATCH `undefined` = не менять). */
+  potVolumeMl?: number | null;
+  stemCount?: number | null;
+  heightCm?: number | null;
 }
 
 export interface FindListingsParams extends CursorPageParams {
@@ -255,6 +275,8 @@ export interface FindListingsParams extends CursorPageParams {
   maxPrice?: number;
   /** Только для SUPER_ADMIN — SELLER всегда скоупится своим продавцом. */
   sellerId?: string;
+  /** true — только ростки. */
+  seedling?: boolean;
 }
 
 export type Seller = {
@@ -339,6 +361,8 @@ export interface OrderItem {
   catalogItemName: string;
   catalogItemImageUrl: string | null;
   unit: string;
+  /** Снапшот атрибутов варианта; `null` — заказ оформлен до вариантов. */
+  variant: ListingVariant | null;
   /** Розница. У SELLER сервер кладёт сюда себестоимость — розницу он не видит. */
   price: string;
   quantity: number;
@@ -588,7 +612,7 @@ export interface PromotionItem {
   promoPrice: number;
   /** Скидка от обычной цены, bps (считает бэкенд); `null` — цена по акции не ниже обычной. */
   discountBps: number | null;
-  listing: {
+  listing: ListingVariant & {
     id: string;
     name: string;
     sellerName: string;

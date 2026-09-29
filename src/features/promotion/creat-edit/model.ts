@@ -3,7 +3,7 @@ import { createQuery } from 'effector-refetch';
 import { debounce, delay, not, or } from 'patronum';
 import { z } from 'zod/v4';
 
-import type { Listing } from '@/entities/listing';
+import { formatVariant, type Listing } from '@/entities/listing';
 import type { Promotion, PromotionDetail } from '@/entities/promotion';
 import { api, type PromotionPayload } from '@/shared/api';
 import { toSum, toTiyin } from '@/shared/lib/currency/currency';
@@ -76,9 +76,15 @@ export interface ListingInfo {
   oldPrice: string | null;
 }
 
+/** Вариант в скобках: у одной позиции у продавца бывает несколько вариантов в акции. */
+const withVariant = (name: string, variant: Parameters<typeof formatVariant>[0]) => {
+  const label = formatVariant(variant);
+  return label ? `${name} (${label})` : name;
+};
+
 const fromListing = (l: Listing): ListingInfo => ({
   id: l.id,
-  name: l.catalogItem.name,
+  name: withVariant(l.catalogItem.name, l),
   sellerName: l.seller?.name ?? '',
   costPrice: l.costPrice,
   price: l.price ?? null,
@@ -88,7 +94,7 @@ const fromListing = (l: Listing): ListingInfo => ({
 const fromDetail = (p: PromotionDetail): ListingInfo[] =>
   p.items.map(({ listing }) => ({
     id: listing.id,
-    name: listing.name,
+    name: withVariant(listing.name, listing),
     sellerName: listing.sellerName,
     costPrice: listing.costPrice,
     price: listing.price,

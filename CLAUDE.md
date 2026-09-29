@@ -241,7 +241,9 @@ SELLER получает только группы, где участвует, и
   только в edit-режиме — эндпоинту нужен существующий `id`); на фронте `Content-Type` инстанса
   `base` явно сбрасывается в `undefined` на этот запрос, чтобы браузер сам проставил
   multipart-boundary. В модалке одна кнопка «Добавить фото или видео» (antd `Upload accept="image/*,video/*"`),
-  маршрутизация по mimetype — на клиенте: изображение открывает `ImageCropModal` (кроп +
+  маршрутизация по mimetype — на клиенте (компонент `shared/ui/media-gallery` — общий для
+  каталога и варианта листинга: плитки, ↑/↓/удалить, «Обновить» при обработке видео, кроп):
+  изображение открывает `ImageCropModal` (кроп +
   превью маркетплейса, из `shared/ui/image-crop-upload`), видео проверяется на 50 МБ и грузится
   сразу без кропа (обложку бэкенд вырезает из кадра сам, транскодинг — фоном, статус `PROCESSING` →
   готовое видео подтягивается кнопкой «Обновить», без поллинга). `shared/ui/image-crop-upload`
@@ -258,10 +260,18 @@ SELLER получает только группы, где участвует, и
   режимах: у листинга нет review-процесса и transition-map на бэкенде, значение принимается любое;
   `entities/listing.STATUS_LABELS` **без перевода** (значение = сырой enum, `DRAFT`/`ACTIVE`/`ARCHIVED`).
   `costPrice`/`stock` — числовые поля через `NumberField` (`shared/ui/form/number-field.tsx`, обёртка над
-  antd `InputNumber`) + `z.coerce.number()`. Нет изображения/баннера у листинга, поэтому
-  `$editingListing` и `mutated` собраны по эталону каталога, но без ветки под `uploadXFx`: `$editingListing` — просто
-  `sample({ clock: editTriggered, target: $editingListing })` (без инлайнового `.on()/.reset()`),
-  `mutated = merge([createFx.done, updateFx.done])`.
+  antd `InputNumber`) + `z.coerce.number()`. **Листинг — вариант товара**: у продавца по одной
+  позиции каталога их может быть несколько, различаются атрибутами блока «Вариант» в модалке —
+  «Росток» (`SwitchField`), «Объём горшка, л» (в API `potVolumeMl`, мл), «Количество стеблей»,
+  «Высота, см»; пустое поле = `null` = «не указано» (тот же `z.preprocess`, что у наценки). Дубль
+  набора бэкенд отвергает 409. Подпись варианта — `entities/listing.formatVariant` (копия
+  форматера бота на бэкенде), в таблицах — `ListingTitle` (название + вариант серым), в том числе в
+  позициях заказа (`OrderItem.variant` — снапшот) и в составе акции. Своя галерея варианта
+  (`ownMedia`, только в edit-режиме) **заменяет** на витрине фото каталога; пустая — показываются
+  фото каталога. Эффекты галереи и синхронизация `$editingListing` — по эталону каталога
+  (`sample` на `[editTriggered, addMediaFx.doneData, …, refetchListingFx.doneData]`), модалку
+  закрывает только `saved = merge([createFx.done, updateFx.done])`, а `mutated` включает и
+  операции с галереей (инвалидация списка).
 - **Продавцы** (`features/seller/creat-edit`) — полный CRUD по образцу каталога: `create` заводит
   продавца вместе с владельцем (`ownerEmail`/`ownerPassword`/`ownerPhone` — поля формы только в
   режиме создания), `update` меняет `name`/`description`, а `status` (`SellerStatus`) — то же поле
