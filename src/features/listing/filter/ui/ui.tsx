@@ -60,7 +60,7 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
           value={search}
           onChange={(event) => searchChanged(event.target.value)}
           allowClear
-          placeholder="Название"
+          placeholder="Название или артикул"
         />
       </Col>
       <Col span={isSuperAdmin ? 4 : 6}>

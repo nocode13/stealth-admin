@@ -82,6 +82,11 @@ src/
   хардкода). Этому же паттерну следуют `entities/catalog`, `entities/seller`, `entities/listing` —
   разница только в содержимом `statusOptions`: у catalog/seller — настоящие русские подписи (как у
   category), у listing — **сознательно без перевода** (значение подписи = сырой enum), см. ниже.
+- артикул листинга (`Listing.code`) — колонка «Артикул» в `pages/listing`
+  (`entities/listing/code-cell.tsx`): `#10001` + копирование веб-ссылки `app.egen.uz/l/<code>`
+  и ссылки на Mini App `t.me/<bot>/<app>?startapp=l_<code>`. Формат ссылок (`entities/listing/links.ts`)
+  обязан совпадать с `stealth-mobile/src/shared/lib/listing-link.ts`. Поиск листингов принимает
+  артикул (`10001` / `#10001`) — бэкенд ищет по нему точно.
 - защита роутов — через `userModel.chainAuthorized` / `chainAnonymous` в `pages/*/model.ts`,
   а не через JSX-обёртки. Роли — параметром `roles: [...]`.
 - `tsconfig` включает `erasableSyntaxOnly` — **нельзя `enum`** (используем const-объект + union,

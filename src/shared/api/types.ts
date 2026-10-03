@@ -224,6 +224,8 @@ export type ListingVariant = {
 
 export type Listing = ListingVariant & {
   id: string;
+  /** Артикул: показывается как «#10001», идёт в короткую ссылку app.egen.uz/l/<code>. */
+  code: number;
   sellerId: string;
   seller?: Pick<Seller, 'id' | 'name'>;
   catalogItemId: string;
