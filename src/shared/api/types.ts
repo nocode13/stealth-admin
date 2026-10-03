@@ -211,6 +211,8 @@ export type UpdateAppVersionPayload = Partial<Omit<AppVersion, 'platform' | 'upd
 
 export type Listing = {
   id: string;
+  /** Артикул: показывается как «#10001», идёт в короткую ссылку app.egen.uz/l/<code>. */
+  code: number;
   sellerId: string;
   seller?: Pick<Seller, 'id' | 'name'>;
   catalogItemId: string;

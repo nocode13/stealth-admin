@@ -6,7 +6,7 @@ import { useUnit } from 'effector-react';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
 import { ListingFilters } from '@/features/listing/filter';
-import { StatusTag, getPriceColumns, type Listing } from '@/entities/listing';
+import { ListingCodeCell, StatusTag, getPriceColumns, type Listing } from '@/entities/listing';
 import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate } from '@/shared/lib/format';
@@ -56,6 +56,12 @@ const useColumns = (): TableProps<Listing>['columns'] => {
   const [role] = useUnit([userModel.$role]);
 
   return [
+    {
+      title: 'Артикул',
+      key: 'code',
+      render: (_, item) => <ListingCodeCell code={item.code} />,
+      width: 130,
+    },
     {
       title: 'Товар',
       key: 'product',
