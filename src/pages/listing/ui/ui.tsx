@@ -6,7 +6,7 @@ import { useUnit } from 'effector-react';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
 import { ListingFilters } from '@/features/listing/filter';
-import { ListingCodeCell, StatusTag, getPriceColumns, type Listing } from '@/entities/listing';
+import { ListingCodeCell, ListingTitle, StatusTag, getPriceColumns, type Listing } from '@/entities/listing';
 import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate } from '@/shared/lib/format';
@@ -65,7 +65,7 @@ const useColumns = (): TableProps<Listing>['columns'] => {
     {
       title: 'Товар',
       key: 'product',
-      render: (_, item) => item.catalogItem.name,
+      render: (_, item) => <ListingTitle name={item.catalogItem.name} variant={item} />,
     },
     ...(role === 'SUPER_ADMIN'
       ? [
