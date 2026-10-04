@@ -13,6 +13,7 @@ import {
   type Order,
   type OrderItem,
 } from '@/entities/order';
+import { ListingTitle } from '@/entities/listing';
 import { userModel } from '@/entities/user';
 import { routes } from '@/shared/config/routing';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
@@ -24,7 +25,11 @@ import { factory } from '../model';
 type Model = ReturnType<typeof factory>;
 
 const ITEM_COLUMNS: TableProps<OrderItem>['columns'] = [
-  { title: 'Позиция', dataIndex: 'catalogItemName' },
+  {
+    title: 'Позиция',
+    key: 'catalogItemName',
+    render: (_, item) => <ListingTitle name={item.catalogItemName} variant={item.variant} />,
+  },
   {
     title: 'Количество',
     key: 'quantity',

@@ -12,9 +12,6 @@ import { createDisclosure } from '@/shared/lib/disclosure';
 import { createForm } from '@/shared/lib/form';
 import { message } from '@/shared/lib/message';
 
-/** Лимит на видео из mediaUploadOptions бэкенда — отсекаем до отправки 50 МБ по сети. */
-export const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
-
 export const schema = z.object({
   nameRu: z.string().min(2, 'Минимум 2 символа'),
   nameUz: z.string().optional(),
@@ -193,15 +190,9 @@ sample({
   target: $editingItem,
 });
 
-/**
- * Видео транскодится фоном, поэтому строка приходит со `status: PROCESSING`, и
- * готовое mp4 с обложкой появляются только в следующем ответе. Поллинга нет
- * намеренно — состояние обновляется кнопкой «Обновить» в модалке.
- */
-export const $hasProcessingMedia = $editingItem.map(
-  (item) => !!item?.media.some((media) => media.status === 'PROCESSING'),
-);
-
+// Видео транскодится фоном, поэтому строка приходит со `status: PROCESSING`, и
+// готовое mp4 с обложкой появляются только в следующем ответе. Поллинга нет
+// намеренно — состояние обновляется кнопкой «Обновить» в галерее.
 export const $refreshing = refetchItemFx.pending;
 
 sample({ clock: refreshTriggered, target: refetchItemFx });

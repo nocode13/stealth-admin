@@ -4,11 +4,14 @@ import { useUnit } from 'effector-react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useId } from 'react';
 
-import { listingConfig } from '@/entities/listing';
+import { formatVariant, listingConfig } from '@/entities/listing';
 import { userModel } from '@/entities/user';
+import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
 import { formatAmount } from '@/shared/lib/currency/currency';
 import { formatPrice } from '@/shared/lib/format';
-import { NumberField, SelectField } from '@/shared/ui/form';
+import { NumberField, SelectField, SwitchField } from '@/shared/ui/form';
+import { CatalogPreview } from '@/shared/ui/marketplace-preview';
+import { MediaGallery } from '@/shared/ui/media-gallery';
 
 import * as model from '../model';
 
@@ -28,6 +31,11 @@ export const ListingModal = () => {
     sellersSearch,
     sellersFetching,
     sellersSearchChanged,
+    uploadingMedia,
+    removingMedia,
+    reorderingMedia,
+    refreshing,
+    refreshTriggered,
   ] = useUnit([
     model.disclosure.$isOpen,
     model.$editingListing,
@@ -43,6 +51,11 @@ export const ListingModal = () => {
     model.$sellersSearch,
     model.$sellersFetching,
     model.sellersSearchChanged,
+    model.addMediaFx.pending,
+    model.removeMediaFx.pending,
+    model.reorderMediaFx.pending,
+    model.$refreshing,
+    model.refreshTriggered,
   ]);
 
   const formId = useId();
@@ -146,7 +159,73 @@ export const ListingModal = () => {
         )}
         <NumberField control={form.control} name="stock" label="Остаток" min={0} step={1} required />
         <SelectField control={form.control} name="status" label="Статус" options={statusOptions} />
+
+        {/* Вариант: у одной позиции каталога у продавца может быть несколько листингов
+            (росток, горшок 3 л, 60 см…). Набор атрибутов уникален — дубль бэкенд отвергнет 409. */}
+        <Typography.Text strong style={{ display: 'block', marginTop: 8, marginBottom: 8 }}>
+          Вариант
+        </Typography.Text>
+        <SwitchField control={form.control} name="seedling" label="Росток" />
+        <NumberField
+          control={form.control}
+          name="potVolumeLiters"
+          label="Объём горшка, л"
+          placeholder="Не указан"
+          min={0}
+          step={0.1}
+        />
+        <NumberField
+          control={form.control}
+          name="stemCount"
+          label="Количество стеблей"
+          placeholder="Не указано"
+          min={1}
+          step={1}
+        />
+        <NumberField
+          control={form.control}
+          name="heightCm"
+          label="Высота, см"
+          placeholder="Не указана"
+          min={1}
+          step={1}
+        />
       </form>
+
+      <Typography.Text style={{ display: 'block', marginTop: 16, marginBottom: 6 }}>
+        Фото и видео варианта
+      </Typography.Text>
+      {editingListing ? (
+        <>
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+            Нет своих фото — на витрине показываются фото позиции каталога. Свои фото заменяют их целиком.
+          </Typography.Paragraph>
+          <MediaGallery
+            media={editingListing.ownMedia}
+            alt={editingListing.catalogItem.name}
+            uploading={uploadingMedia}
+            removing={removingMedia}
+            reordering={reorderingMedia}
+            refreshing={refreshing}
+            onUpload={(file) => model.addMediaFx(file)}
+            onRemove={(mediaId) => model.removeMediaFx(mediaId)}
+            onReorder={(mediaId, direction) => model.reorderMediaFx({ mediaId, direction })}
+            onRefresh={() => refreshTriggered()}
+            cropAspect={PREVIEW_ASPECT.catalog}
+            renderCropPreview={({ src, natural, area }) => (
+              <CatalogPreview
+                src={src}
+                natural={natural}
+                area={area}
+                name={[editingListing.catalogItem.name, formatVariant(editingListing)].filter(Boolean).join(' · ')}
+                category={editingListing.catalogItem.category?.name}
+              />
+            )}
+          />
+        </>
+      ) : (
+        <Typography.Text type="secondary">Сохраните позицию, чтобы загрузить свои фото или видео.</Typography.Text>
+      )}
     </Modal>
   );
 };
