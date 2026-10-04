@@ -43,6 +43,7 @@ export type {
   Listing,
   ListingPayload,
   ListingStatus,
+  ListingVariant,
   Locale,
   LocalizedText,
   LoginPayload,
