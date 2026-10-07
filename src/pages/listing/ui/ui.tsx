@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- createLazyPage требует из модуля страницы экспорт component + createModel */
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Flex, Table, type TableProps } from 'antd';
+import { Button, Flex, Table, Typography, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
@@ -61,6 +61,11 @@ const useColumns = (): TableProps<Listing>['columns'] => {
       key: 'code',
       render: (_, item) => <ListingCodeCell code={item.code} />,
       width: 130,
+    },
+    {
+      title: 'Код',
+      key: 'sku',
+      render: (_, item) => (item.sku ? <Typography.Text copyable>{item.sku}</Typography.Text> : '—'),
     },
     {
       title: 'Товар',

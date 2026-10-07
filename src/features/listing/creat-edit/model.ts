@@ -18,6 +18,8 @@ const optionalNumber = (inner: z.ZodType<number>) =>
 
 export const schema = z.object({
   catalogItemId: z.string().min(1, 'Выберите товар'),
+  // Код продавца для поиска; пусто = null («кода нет»).
+  sku: z.string().trim().max(64, 'Не больше 64 символов').optional(),
   // Себестоимость — столько платформа должна продавцу. Розницу считает бэкенд
   // (наценка + акции), в форме её нет.
   costPrice: z.coerce.number().min(0, 'Себестоимость не может быть отрицательной'),
@@ -45,6 +47,7 @@ export type FormValues = z.infer<typeof schema>;
 
 export const DEFAULT_VALUES: FormValues = {
   catalogItemId: '',
+  sku: '',
   costPrice: 0,
   customMarkupPercent: null,
   stock: 0,
@@ -61,6 +64,9 @@ const $isSuperAdmin = userModel.$role.map((role) => role === 'SUPER_ADMIN');
 // В UI — проценты, в API — базисные пункты (35% = 3500); null — базовая наценка.
 const toMarkupBps = (percent: FormValues['customMarkupPercent']) =>
   percent === null ? null : Math.round(Number(percent) * 100);
+
+// Пустой код — null: в PATCH это снимает код, а не пишет пустую строку.
+const toSku = (value: FormValues['sku']) => value?.trim() || null;
 
 // `$formValues` — сырой снапшот формы, zod-коэрсия до эффектов не доходит: числа
 // приводим вручную, пустое поле — null («не указано»).
@@ -197,6 +203,7 @@ sample({
   clock: editTriggered,
   fn: (listing): FormValues => ({
     catalogItemId: listing.catalogItemId,
+    sku: listing.sku ?? '',
     costPrice: toSum(Number(listing.costPrice)),
     customMarkupPercent:
       listing.customMarkupBps === null || listing.customMarkupBps === undefined ? null : listing.customMarkupBps / 100,
@@ -216,6 +223,7 @@ export const createFx = attach({
   effect: ({ values, isSuperAdmin }) =>
     api.listing.create({
       catalogItemId: values.catalogItemId,
+      sku: toSku(values.sku),
       // `$formValues` — сырой снапшот из form.watch(), zod-коэрсия (z.coerce.number())
       // применяется только валидатором и до эффекта не доходит — приводим типы вручную.
       costPrice: toTiyin(Number(values.costPrice)),
@@ -236,6 +244,7 @@ export const updateFx = attach({
     // sellerId в PATCH не отправляем: продавца у листинга менять нельзя.
     return api.listing.update(editing.id, {
       catalogItemId: values.catalogItemId,
+      sku: toSku(values.sku),
       costPrice: toTiyin(Number(values.costPrice)),
       stock: Math.trunc(Number(values.stock)),
       status: values.status,

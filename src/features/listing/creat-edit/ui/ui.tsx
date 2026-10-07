@@ -9,7 +9,7 @@ import { userModel } from '@/entities/user';
 import { PREVIEW_ASPECT } from '@/shared/config/marketplace-preview';
 import { formatAmount } from '@/shared/lib/currency/currency';
 import { formatPrice } from '@/shared/lib/format';
-import { NumberField, SelectField, SwitchField } from '@/shared/ui/form';
+import { NumberField, SelectField, SwitchField, TextField } from '@/shared/ui/form';
 import { CatalogPreview } from '@/shared/ui/marketplace-preview';
 import { MediaGallery } from '@/shared/ui/media-gallery';
 
@@ -118,6 +118,9 @@ export const ListingModal = () => {
             }}
           />
         )}
+        {/* Код продавца — необязательный, для быстрого поиска в таблице. Уникален у
+            продавца: дубль бэкенд отвергнет 409. */}
+        <TextField control={form.control} name="sku" label="Код" placeholder="Необязательно, например R-60" />
         <NumberField
           control={form.control}
           name="costPrice"
