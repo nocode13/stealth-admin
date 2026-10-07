@@ -226,6 +226,8 @@ export type Listing = ListingVariant & {
   id: string;
   /** Артикул: показывается как «#10001», идёт в короткую ссылку app.egen.uz/l/<code>. */
   code: number;
+  /** Код продавца (ручной, для поиска); `null` — не задан. */
+  sku: string | null;
   sellerId: string;
   seller?: Pick<Seller, 'id' | 'name'>;
   catalogItemId: string;
@@ -252,6 +254,8 @@ export type Listing = ListingVariant & {
 
 export interface ListingPayload {
   catalogItemId: string;
+  /** Код продавца; `null` — снять (в PATCH `undefined` = не менять). Уникален у продавца. */
+  sku?: string | null;
   /** Себестоимость в тиинах (1 сум = 100 тиинов). Розницу считает бэкенд. */
   costPrice: number;
   stock: number;

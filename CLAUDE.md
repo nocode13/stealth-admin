@@ -87,6 +87,10 @@ src/
   и ссылки на Mini App `t.me/<bot>/<app>?startapp=l_<code>`. Формат ссылок (`entities/listing/links.ts`)
   обязан совпадать с `stealth-mobile/src/shared/lib/listing-link.ts`. Поиск листингов принимает
   артикул (`10001` / `#10001`) — бэкенд ищет по нему точно.
+- код продавца (`Listing.sku`, ручной, необязательный, уникален у продавца — дубль даёт 409) —
+  отдельно от артикула: поле «Код» в `features/listing/creat-edit` (пустое уходит `null`),
+  колонка «Код» в `pages/listing`. Отдельного инпута в фильтре нет — общий поиск
+  (`search`) бэкенд матчит и по `sku` (подстрока без регистра). В мобилку `sku` не уходит.
 - защита роутов — через `userModel.chainAuthorized` / `chainAnonymous` в `pages/*/model.ts`,
   а не через JSX-обёртки. Роли — параметром `roles: [...]`.
 - `tsconfig` включает `erasableSyntaxOnly` — **нельзя `enum`** (используем const-объект + union,
