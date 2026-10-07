@@ -3,6 +3,7 @@ import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Flex, Table, Typography, type TableProps } from 'antd';
 import { useUnit } from 'effector-react';
 
+import { ListingCampaignLink } from '@/features/listing/campaign-link';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
 import { ListingFilters } from '@/features/listing/filter';
@@ -48,6 +49,7 @@ const Page = ({ model }: LazyPageProps<Model>) => {
         </Flex>
       )}
       <ListingCreateEdit.View />
+      <ListingCampaignLink.View />
     </Flex>
   );
 };
@@ -105,11 +107,12 @@ const useColumns = (): TableProps<Listing>['columns'] => {
       key: 'actions',
       render: (_, item) => (
         <Flex gap="small">
+          <ListingCampaignLink.Trigger item={item} />
           <Button size="small" icon={<EditOutlined />} onClick={() => ListingCreateEdit.model.editTriggered(item)} />
           <ListingDelete.View item={item} />
         </Flex>
       ),
-      width: 90,
+      width: 120,
     },
   ];
 };
