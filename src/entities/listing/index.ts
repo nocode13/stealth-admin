@@ -2,7 +2,7 @@ import { statusOptions, useStatusOptions } from './config';
 
 export { ListingTitle, StatusTag } from './ui';
 export { ListingCodeCell } from './code-cell';
-export { formatListingCode, getListingLinks } from './links';
+export { formatListingCode, getListingLinks, getListingCampaignLinks, type CampaignUtm } from './links';
 export { getPriceColumns } from './lib';
 export { formatVariant } from './variant';
 export { type Listing } from '@/shared/api/types';

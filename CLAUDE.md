@@ -35,7 +35,7 @@ src/
               country/creat-edit, country/filter,
               order/change-status,
               catalog/creat-edit, catalog/filter,
-              listing/creat-edit, listing/delete, listing/filter,
+              listing/creat-edit, listing/delete, listing/filter, listing/campaign-link,
               seller/creat-edit, seller/filter,
               broadcast/create
   entities/   user/ ($user, $session, sessionFx, chainAuthorized/chainAnonymous),
@@ -87,6 +87,13 @@ src/
   и ссылки на Mini App `t.me/<bot>/<app>?startapp=l_<code>`. Формат ссылок (`entities/listing/links.ts`)
   обязан совпадать с `stealth-mobile/src/shared/lib/listing-link.ts`. Поиск листингов принимает
   артикул (`10001` / `#10001`) — бэкенд ищет по нему точно.
+- рекламная ссылка на товар (`features/listing/campaign-link`, кнопка со скрепкой в actions
+  строки `pages/listing` — видна и `SUPER_ADMIN`, и `SELLER`): модалка собирает
+  `app.egen.uz/l/<code>?utm_source=…&utm_medium=…&utm_campaign=…&utm_content=…` (+ QR), для
+  Telegram ещё `startapp=l_<code>_<source>` — туда влезает только источник. Источники/форматы —
+  `config.ts` фичи, зеркало UTM-конвенции `stealth-mobile/src/shared/analytics/AGENTS.md`; сборка —
+  `entities/listing.getListingCampaignLinks`. Бэкенд не участвует. Поля — effector-сторы без
+  сабмита (как в фильтрах), при закрытии не сбрасываются: ссылки одной кампании делают подряд.
 - код продавца (`Listing.sku`, ручной, необязательный, уникален у продавца — дубль даёт 409) —
   отдельно от артикула: поле «Код» в `features/listing/creat-edit` (пустое уходит `null`),
   колонка «Код» в `pages/listing`. Отдельного инпута в фильтре нет — общий поиск
