@@ -221,7 +221,7 @@ export const ListingModal = () => {
                 natural={natural}
                 area={area}
                 name={[editingListing.catalogItem.name, formatVariant(editingListing)].filter(Boolean).join(' · ')}
-                category={editingListing.catalogItem.category?.name}
+                category={editingListing.catalogItem.subcategory?.name ?? editingListing.catalogItem.category.name}
               />
             )}
           />

@@ -43,23 +43,46 @@ export type Locale = 'RU' | 'UZ' | 'EN';
 
 export type Translation<T> = T & { locale: Locale; auto: boolean };
 
+/**
+ * Категории — дерево из двух уровней: `parentId === null` — категория товаров (комнатные
+ * растения, горшки...; только master, с `code`/иконкой/порядком), иначе — подкатегория
+ * (у растений — род). Продавец предлагает только подкатегории.
+ */
 export type Category = {
   id: string;
   /** Резолвленное имя (для админки всегда RU) — для таблиц и селектов. */
   name: string;
   translations: Translation<{ name: string }>[];
+  /** Стабильный ключ категории товаров для фронта мобилки (`houseplants`); у подкатегорий null. */
+  code: string | null;
+  parentId: string | null;
+  /** Иконка плитки на главной мобилки; только у верхнего уровня. */
+  iconUrl: string | null;
+  /** Порядок плиток на главной мобилки. */
+  position: number;
   sellerId: string | null;
   status: ReviewStatus;
   /** Сколько позиций каталога привязано к категории (считает бэкенд, без учёта видимости). */
   itemsCount: number;
+  /** Сколько подкатегорий у категории верхнего уровня. */
+  childrenCount: number;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Ссылка на категорию внутри позиции каталога. */
+export type CategoryRef = { id: string; code: string | null; name: string };
 
 export interface CategoryPayload {
   /** RU обязателен, остальные локали опциональны — пусто = не переведено. */
   translations: { locale: Locale; name?: string }[];
   status?: ReviewStatus;
+  /** Только при создании; пусто — категория товаров (только SUPER_ADMIN). */
+  parentId?: string;
+  /** Только у категории товаров и только SUPER_ADMIN. */
+  code?: string;
+  /** Только SUPER_ADMIN. */
+  position?: number;
 }
 
 export interface FindCategoriesParams extends CursorPageParams {
@@ -67,6 +90,10 @@ export interface FindCategoriesParams extends CursorPageParams {
   status?: ReviewStatus;
   /** Только для SUPER_ADMIN — SELLER скоупится по видимости на бэкенде. */
   sellerId?: string;
+  /** Только подкатегории этой категории. */
+  parentId?: string;
+  /** Только категории товаров (верхний уровень), по `position`. */
+  root?: boolean;
 }
 
 /** Платформенный справочник стран — в отличие от Category, нет status/sellerId: продавец
@@ -120,8 +147,11 @@ export type CatalogItem = {
   description: string | null;
   unit: string;
   translations: Translation<{ name: string; description: string | null; unit: string }>[];
-  categoryId: string | null;
-  category: Category | null;
+  /** Категория товаров — обязательна. */
+  categoryId: string;
+  category: CategoryRef;
+  subcategoryId: string | null;
+  subcategory: CategoryRef | null;
   countryId: string | null;
   country: Country | null;
   /** Фото и видео одной галереей, сквозной порядок по sortOrder. */
@@ -139,8 +169,10 @@ export type CatalogItem = {
 export interface CatalogItemPayload {
   /** RU обязателен, остальные локали опциональны — пусто = не переведено. */
   translations: { locale: Locale; name?: string; description?: string; unit?: string }[];
-  /** `null` в PATCH снимает категорию; `undefined` — не менять. */
-  categoryId?: string | null;
+  /** Категория товаров — обязательна при создании, снять нельзя. */
+  categoryId?: string;
+  /** `null` в PATCH снимает подкатегорию; `undefined` — не менять. */
+  subcategoryId?: string | null;
   /** `null` в PATCH снимает страну; `undefined` — не менять. */
   countryId?: string | null;
   status?: ReviewStatus;
@@ -151,8 +183,9 @@ export interface CatalogItemPayload {
 export interface FindCatalogParams extends CursorPageParams {
   search?: string;
   categoryId?: string;
-  /** Только позиции без категории; `categoryId` при этом игнорируется. */
-  noCategory?: boolean;
+  subcategoryId?: string;
+  /** Только позиции без подкатегории; `subcategoryId` при этом игнорируется. */
+  noSubcategory?: boolean;
   countryId?: string;
   status?: ReviewStatus;
   /** Только для SUPER_ADMIN — SELLER скоупится по видимости на бэкенде. */
@@ -274,6 +307,7 @@ export interface ListingPayload {
 export interface FindListingsParams extends CursorPageParams {
   search?: string;
   categoryId?: string;
+  subcategoryId?: string;
   status?: ListingStatus;
   /** В тиинах. У SUPER_ADMIN — по рознице, у SELLER — по себестоимости. */
   minPrice?: number;

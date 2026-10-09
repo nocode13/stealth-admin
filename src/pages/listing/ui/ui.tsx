@@ -7,6 +7,7 @@ import { ListingCampaignLink } from '@/features/listing/campaign-link';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
 import { ListingDelete } from '@/features/listing/delete';
 import { ListingFilters } from '@/features/listing/filter';
+import { CategoryPath } from '@/entities/catalog';
 import { ListingCodeCell, ListingTitle, StatusTag, getPriceColumns, type Listing } from '@/entities/listing';
 import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
@@ -86,7 +87,7 @@ const useColumns = (): TableProps<Listing>['columns'] => {
     {
       title: 'Категория',
       key: 'category',
-      render: (_, item) => item.catalogItem.category?.name ?? '—',
+      render: (_, item) => <CategoryPath item={item.catalogItem} />,
     },
     ...getPriceColumns(role === 'SUPER_ADMIN'),
     {

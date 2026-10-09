@@ -3,17 +3,18 @@ import { createQuery } from 'effector-refetch';
 import { delay, spread } from 'patronum';
 
 import type { CatalogItem } from '@/entities/catalog';
+import type { Category } from '@/entities/category';
 import { api } from '@/shared/api';
 import { fRetry } from '@/shared/lib/f-retry';
 import { message } from '@/shared/lib/message';
 
-import { disclosure, editTriggered } from './model';
+import { $editingCategory, disclosure, editTriggered } from './model';
 
 /** Пагинации в модалке нет намеренно: показываем первую сотню, дальше — страница /catalog. */
 const ITEMS_LIMIT = 100;
 
 export const detachTriggered = createEvent<CatalogItem>();
-/** Публичное событие: позиция отвязана. Страница категорий по нему перезапрашивает счётчики. */
+/** Публичное событие: позиция отвязана от подкатегории. Страница категорий по нему перезапрашивает счётчики. */
 export const itemDetached = createEvent<CatalogItem>();
 
 export const $items = createStore<CatalogItem[]>([]);
@@ -22,8 +23,21 @@ export const $hasMore = createStore(false);
 /** id позиций, по которым сейчас идёт запрос — для loading на конкретной строке. */
 export const $detachingIds = createStore<string[]>([]);
 
+/**
+ * Отвязать можно только от подкатегории: категория товаров у позиции обязательна,
+ * переносить позицию в другую категорию — в форме каталога.
+ */
+export const $canDetach = $editingCategory.map((category) => !!category?.parentId);
+
+// У категории товаров позиции висят на categoryId, у подкатегории — на subcategoryId.
 const fetchItemsQuery = createQuery({
-  effect: createEffect((categoryId: string) => api.catalog.findAll({ categoryId, limit: ITEMS_LIMIT })),
+  effect: createEffect((category: Category) =>
+    api.catalog.findAll(
+      category.parentId
+        ? { subcategoryId: category.id, limit: ITEMS_LIMIT }
+        : { categoryId: category.id, limit: ITEMS_LIMIT },
+    ),
+  ),
   concurrency: 'TAKE_LATEST',
 });
 
@@ -34,7 +48,6 @@ export const $pending = fetchItemsQuery.$pending;
 // Список грузим только в режиме редактирования: у новой категории позиций быть не может.
 sample({
   clock: editTriggered,
-  fn: (category) => category.id,
   target: fetchItemsQuery.start,
 });
 
@@ -51,8 +64,8 @@ sample({
 
 const detachFx = createEffect((item: CatalogItem) =>
   // Отдельный запрос, не связанный с сохранением формы категории:
-  // categoryId: null — единственный способ снять категорию у позиции.
-  api.catalog.update(item.id, { categoryId: null }).then(() => item),
+  // subcategoryId: null — единственный способ снять подкатегорию у позиции.
+  api.catalog.update(item.id, { subcategoryId: null }).then(() => item),
 );
 
 sample({ clock: detachTriggered, target: detachFx });
@@ -71,6 +84,6 @@ sample({
   target: [$items.reinit, $hasMore.reinit, $detachingIds.reinit],
 });
 
-message({ clock: itemDetached, type: 'success', content: 'Позиция отвязана от категории' });
+message({ clock: itemDetached, type: 'success', content: 'Позиция отвязана от подкатегории' });
 message({ clock: detachFx.failData, errorHandle: true });
 message({ clock: fetchItemsQuery.finished.fail.map((res) => res.error), errorHandle: true });

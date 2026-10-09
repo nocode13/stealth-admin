@@ -1,6 +1,6 @@
 import { statusOptions, useStatusOptions } from './config';
 
-export { StatusTag } from './ui';
+export { CategoryPath, StatusTag } from './ui';
 
 export const catalogConfig = {
   statusOptions,

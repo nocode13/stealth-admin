@@ -40,10 +40,11 @@ export const MARKETPLACE_THEME = {
   },
 } as const satisfies Record<PreviewScheme, PreviewTheme>;
 
-/** Соотношение сторон кропа: квадрат под товар, 5:2 под баннер магазина. */
+/** Соотношение сторон кропа: квадрат под товар и иконку категории, 5:2 под баннер магазина. */
 export const PREVIEW_ASPECT = {
   catalog: 1,
   sellerBanner: 5 / 2,
+  categoryIcon: 1,
 } as const;
 
 /** Ширина «телефона» в превью — типичный логический viewport мобилки. */
@@ -63,4 +64,6 @@ export const MARKETPLACE_SLOTS = {
   sellerBanner: { height: 160, radius: 0 },
   /** `pages/listing-detail/ui.tsx`: карточка магазина, h-28, rounded-lg сверху */
   sellerCardBanner: { height: 112, radius: 8 },
+  /** `entities/category/ui/category-tile.tsx`: сетка 4 колонки, иконка 64×64 rounded-2xl, подпись в 2 строки */
+  categoryTile: { size: 64, radius: 16, columns: 4 },
 } as const;

@@ -6,7 +6,7 @@ import { useUnit } from 'effector-react';
 import { CatalogCreateEdit } from '@/features/catalog/creat-edit';
 import { CatalogFilters } from '@/features/catalog/filter';
 import { ListingCreateEdit } from '@/features/listing/creat-edit';
-import { StatusTag, type CatalogItem } from '@/entities/catalog';
+import { CategoryPath, StatusTag, type CatalogItem } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
 import { formatDate } from '@/shared/lib/format';
@@ -74,7 +74,7 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
     {
       title: 'Категория',
       key: 'category',
-      render: (_, item) => item.category?.name ?? '—',
+      render: (_, item) => <CategoryPath item={item} />,
     },
     {
       title: 'Страна',

@@ -27,7 +27,11 @@ export const CategoryItems = () => {
 };
 
 const useColumns = (): TableProps<CatalogItem>['columns'] => {
-  const [detachingIds, detachTriggered] = useUnit([items.$detachingIds, items.detachTriggered]);
+  const [detachingIds, detachTriggered, canDetach] = useUnit([
+    items.$detachingIds,
+    items.detachTriggered,
+    items.$canDetach,
+  ]);
 
   return [
     { title: 'Название', dataIndex: 'name' },
@@ -40,10 +44,11 @@ const useColumns = (): TableProps<CatalogItem>['columns'] => {
     {
       key: 'actions',
       align: 'right',
+      hidden: !canDetach,
       render: (_, item) => (
         <Popconfirm
-          title="Отвязать позицию от категории?"
-          description="Позиция останется в каталоге, но без категории."
+          title="Отвязать позицию от подкатегории?"
+          description="Позиция останется в каталоге и в своей категории, но без подкатегории."
           onConfirm={() => detachTriggered(item)}
           okText="Отвязать"
           cancelText="Отмена"

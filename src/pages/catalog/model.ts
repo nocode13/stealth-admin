@@ -30,9 +30,12 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
           cursor: cursor || undefined,
           limit: PAGE_SIZE,
           search: filters.search || undefined,
-          categoryId:
-            filters.categoryId && filters.categoryId !== CatalogFilters.NO_CATEGORY ? filters.categoryId : undefined,
-          noCategory: filters.categoryId === CatalogFilters.NO_CATEGORY || undefined,
+          categoryId: filters.categoryId || undefined,
+          subcategoryId:
+            filters.subcategoryId && filters.subcategoryId !== CatalogFilters.NO_SUBCATEGORY
+              ? filters.subcategoryId
+              : undefined,
+          noSubcategory: filters.subcategoryId === CatalogFilters.NO_SUBCATEGORY || undefined,
           countryId: filters.countryId || undefined,
           status: filters.status || undefined,
         }),
