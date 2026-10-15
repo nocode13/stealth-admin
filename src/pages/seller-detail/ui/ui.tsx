@@ -7,7 +7,7 @@ import { SellerCreateEdit } from '@/features/seller/creat-edit';
 import { StatusTag as SellerStatusTag } from '@/entities/seller';
 import { GroupStatusTag, formatMoney, type OrderGroup } from '@/entities/order';
 import { StatusTag as CategoryStatusTag, type Category } from '@/entities/category';
-import { StatusTag as CatalogStatusTag, type CatalogItem } from '@/entities/catalog';
+import { CategoryPath, StatusTag as CatalogStatusTag, type CatalogItem } from '@/entities/catalog';
 import { ListingTitle, StatusTag as ListingStatusTag, getPriceColumns, type Listing } from '@/entities/listing';
 import { routes } from '@/shared/config/routing';
 import type { LazyPageProps } from '@/shared/lib/create-lazy-page';
@@ -196,7 +196,7 @@ const useCategoryColumns = (): TableProps<Category>['columns'] => {
 const useCatalogColumns = (): TableProps<CatalogItem>['columns'] => {
   return [
     { title: 'Название', dataIndex: 'name' },
-    { title: 'Категория', key: 'category', render: (_, item) => item.category?.name ?? '—' },
+    { title: 'Категория', key: 'category', render: (_, item) => <CategoryPath item={item} /> },
     {
       title: 'Статус',
       key: 'status',

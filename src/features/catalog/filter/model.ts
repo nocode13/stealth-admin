@@ -2,7 +2,7 @@ import { combine, createEffect, createEvent, createStore, merge, restore, sample
 import { createQuery } from 'effector-refetch';
 import { debounce } from 'patronum';
 
-import type { Category } from '@/entities/category';
+import { createCategoryPicker } from '@/entities/category';
 import type { CatalogItem } from '@/entities/catalog';
 import type { Country } from '@/entities/country';
 import { api } from '@/shared/api';
@@ -10,49 +10,35 @@ import { textFactory } from '@/shared/lib/text-factory';
 import { optionsFactory } from '@/shared/lib/options-factory';
 
 /**
- * Спец-значение селекта категории — «Без категории». Живёт в значении того же
+ * Спец-значение селекта подкатегории — «Без подкатегории». Живёт в значении того же
  * `optionsFactory`, чтобы не заводить второй стор; разбор в query-параметры
- * (`categoryId` vs `noCategory`) делает `pages/catalog/model.ts`.
+ * (`subcategoryId` vs `noSubcategory`) делает `pages/catalog/model.ts`.
  */
-export const NO_CATEGORY = '__none__';
+export const NO_SUBCATEGORY = '__none__';
 
 export const reset = createEvent();
 
 export const searchModel = textFactory({ reset });
 export const statusModel = optionsFactory<CatalogItem['status']>({ reset });
 export const categoryModel = optionsFactory<string>({ reset });
+export const subcategoryModel = optionsFactory<string>({ reset });
 export const countryModel = optionsFactory<string>({ reset });
 
-export const categoriesSearchChanged = createEvent<string>();
 export const countriesSearchChanged = createEvent<string>();
 
-export const $categories = createStore<Category[]>([]);
-export const $categoriesSearch = restore(categoriesSearchChanged, '');
+export const categoryPicker = createCategoryPicker({ $categoryId: categoryModel.$value });
 
-const fetchCategoriesQuery = createQuery({
-  effect: createEffect((search?: string) =>
-    api.category.findAll({ limit: 100, status: 'APPROVED', search: search || undefined }),
-  ),
-  cache: { staleAfter: 10_000 },
-  concurrency: 'TAKE_LATEST',
-});
-
-export const $categoriesFetching = fetchCategoriesQuery.$pending;
-
+// Подкатегория принадлежит категории: сменили категорию — снимаем подкатегорию. Через
+// changed, а не reinit: так фильтр перезапросится уже с пустой подкатегорией.
 sample({
-  clock: fetchCategoriesQuery.finished.done,
-  // Параметр status бэкенд применяет только для SUPER_ADMIN: продавцу он всё равно
-  // отдаёт его собственные категории в любом статусе — дофильтровываем на клиенте.
-  fn: (res) => res.result.data.items.filter((category) => category.status === 'APPROVED'),
-  target: $categories,
+  clock: categoryModel.changed,
+  source: subcategoryModel.$value,
+  filter: (subcategoryId) => subcategoryId !== null,
+  fn: () => null,
+  target: subcategoryModel.changed,
 });
 
-sample({
-  clock: debounce(categoriesSearchChanged, 300),
-  target: fetchCategoriesQuery.start,
-});
-
-fetchCategoriesQuery.start();
+categoryPicker.load();
 
 export const $countries = createStore<Country[]>([]);
 export const $countriesSearch = restore(countriesSearchChanged, '');
@@ -82,6 +68,7 @@ export const filtersChanged = merge([
   searchModel.debouncedChanged,
   statusModel.changed,
   categoryModel.changed,
+  subcategoryModel.changed,
   countryModel.changed,
 ]);
 
@@ -89,5 +76,6 @@ export const $filters = combine({
   search: searchModel.$value,
   status: statusModel.$value,
   categoryId: categoryModel.$value,
+  subcategoryId: subcategoryModel.$value,
   countryId: countryModel.$value,
 });

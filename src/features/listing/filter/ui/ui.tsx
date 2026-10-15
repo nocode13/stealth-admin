@@ -1,6 +1,7 @@
 import { Col, Input, InputNumber, Row, Select, theme } from 'antd';
 import { useUnit } from 'effector-react';
 
+import { useCategoryPickerSelects } from '@/entities/category';
 import { listingConfig } from '@/entities/listing';
 import { userModel } from '@/entities/user';
 
@@ -14,10 +15,8 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
     statusChanged,
     categoryId,
     categoryChanged,
-    categories,
-    categoriesSearch,
-    categoriesFetching,
-    categoriesSearchChanged,
+    subcategoryId,
+    subcategoryChanged,
     minPrice,
     minPriceChanged,
     maxPrice,
@@ -33,10 +32,8 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
     model.statusModel.changed,
     model.categoryModel.$value,
     model.categoryModel.changed,
-    model.$categories,
-    model.$categoriesSearch,
-    model.$categoriesFetching,
-    model.categoriesSearchChanged,
+    model.subcategoryModel.$value,
+    model.subcategoryModel.changed,
     model.minPriceModel.$value,
     model.minPriceModel.changed,
     model.maxPriceModel.$value,
@@ -50,12 +47,18 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   const isSuperAdmin = role === 'SUPER_ADMIN';
   const statusOptions = listingConfig.useStatusOptions();
-  const categoryOptions = categories.map((category) => ({ label: category.name, value: category.id }));
+  const { categorySelect, subcategorySelect } = useCategoryPickerSelects({
+    picker: model.categoryPicker,
+    categoryId,
+    subcategoryId,
+    onCategoryChange: categoryChanged,
+    onSubcategoryChange: subcategoryChanged,
+  });
   const sellerOptions = sellers.map((seller) => ({ label: seller.name, value: seller.id }));
 
   return (
     <Row gutter={[token.margin, token.margin]} style={{ width: '100%' }}>
-      <Col span={isSuperAdmin ? 4 : 6}>
+      <Col span={isSuperAdmin ? 4 : 5}>
         <Input
           value={search}
           onChange={(event) => searchChanged(event.target.value)}
@@ -63,26 +66,10 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
           placeholder="Название, артикул или код"
         />
       </Col>
-      <Col span={isSuperAdmin ? 4 : 6}>
-        <Select
-          value={categoryId}
-          options={categoryOptions}
-          onChange={(value) => categoryChanged(value ?? null)}
-          allowClear
-          style={{ width: '100%' }}
-          placeholder="Категория"
-          loading={categoriesFetching}
-          showSearch={{
-            searchValue: categoriesSearch,
-            onSearch: categoriesSearchChanged,
-            // Фильтрация серверная — клиентскую отключаем, иначе она режет ответ бэка.
-            filterOption: false,
-            autoClearSearchValue: true,
-          }}
-        />
-      </Col>
+      <Col span={isSuperAdmin ? 3 : 4}>{categorySelect}</Col>
+      <Col span={isSuperAdmin ? 3 : 4}>{subcategorySelect}</Col>
       {isSuperAdmin && (
-        <Col span={5}>
+        <Col span={4}>
           <Select
             value={sellerId}
             options={sellerOptions}
@@ -95,7 +82,7 @@ export const View: React.FC<React.PropsWithChildren> = ({ children }) => {
           />
         </Col>
       )}
-      <Col span={isSuperAdmin ? 4 : 5}>
+      <Col span={isSuperAdmin ? 3 : 4}>
         <Select
           value={status}
           options={statusOptions}

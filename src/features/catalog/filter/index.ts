@@ -1,9 +1,9 @@
-import { $filters, filtersChanged, NO_CATEGORY } from './model';
+import { $filters, filtersChanged, NO_SUBCATEGORY } from './model';
 import { View } from './ui';
 
 export const CatalogFilters = {
   View,
-  NO_CATEGORY,
+  NO_SUBCATEGORY,
   model: {
     $filters,
     filtersChanged,
