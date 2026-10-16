@@ -34,6 +34,7 @@ export const factory = ({ route }: LazyPageFactoryParams) => {
           limit: PAGE_SIZE,
           search: filters.search || undefined,
           categoryId: filters.categoryId || undefined,
+          subcategoryId: filters.subcategoryId || undefined,
           sellerId: filters.sellerId || undefined,
           status: filters.status || undefined,
           minPrice: filters.minPrice != null ? toTiyin(filters.minPrice) : undefined,

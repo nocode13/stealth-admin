@@ -1,8 +1,8 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Modal, Typography } from 'antd';
 import { useUnit } from 'effector-react';
-import { useForm } from 'react-hook-form';
-import { useId } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { useEffect, useId, useRef } from 'react';
 
 import { catalogConfig } from '@/entities/catalog';
 import { userModel } from '@/entities/user';
@@ -27,9 +27,7 @@ export const CatalogItemModal = () => {
     validated,
     closeRequested,
     role,
-    categoriesSearch,
     categoriesFetching,
-    categoriesSearchChanged,
     countryOptions,
     countriesSearch,
     countriesFetching,
@@ -47,9 +45,7 @@ export const CatalogItemModal = () => {
     model.validated,
     model.reset,
     userModel.$role,
-    model.$categoriesSearch,
     model.$categoriesFetching,
-    model.categoriesSearchChanged,
     model.$countries,
     model.$countriesSearch,
     model.$countriesFetching,
@@ -64,6 +60,33 @@ export const CatalogItemModal = () => {
   });
   model.form.useBindFormWithModel({ form });
   const statusOptions = catalogConfig.useStatusOptions();
+  const [subcategories, subcategoriesSearch, subcategoriesFetching, subcategoriesSearchChanged] = useUnit([
+    model.$subcategories,
+    model.$subcategoriesSearch,
+    model.$subcategoriesFetching,
+    model.subcategoriesSearchChanged,
+  ]);
+  const [categoryId, subcategoryId] = useWatch({ control: form.control, name: ['categoryId', 'subcategoryId'] });
+
+  // Подкатегория принадлежит категории: сменили категорию — снимаем подкатегорию. Переход
+  // из пустого значения (открытие на редактирование, первый выбор) значение не трогает.
+  const prevCategoryId = useRef(categoryId);
+  useEffect(() => {
+    if (prevCategoryId.current && prevCategoryId.current !== categoryId) {
+      form.setValue('subcategoryId', '');
+    }
+    prevCategoryId.current = categoryId;
+  }, [categoryId, form]);
+
+  // Текущая подкатегория позиции может не попасть в первую сотню вариантов — держим её в списке.
+  const subcategoryOptions = subcategories.map((category) => ({ value: category.id, label: category.name }));
+  if (
+    editingItem?.subcategory &&
+    editingItem.subcategoryId === subcategoryId &&
+    !subcategoryOptions.some((option) => option.value === editingItem.subcategoryId)
+  ) {
+    subcategoryOptions.unshift({ value: editingItem.subcategory.id, label: editingItem.subcategory.name });
+  }
 
   return (
     <Modal
@@ -81,13 +104,24 @@ export const CatalogItemModal = () => {
         <SelectField
           control={form.control}
           name="categoryId"
-          label="Категория"
-          allowClear
+          label="Категория товаров"
           options={categoryOptions.map((category) => ({ value: category.id, label: category.name }))}
           loading={categoriesFetching}
+          showSearch={{ optionFilterProp: 'label' }}
+          required
+        />
+        <SelectField
+          control={form.control}
+          name="subcategoryId"
+          label="Подкатегория"
+          allowClear
+          disabled={!categoryId}
+          placeholder={categoryId ? undefined : 'Сначала выберите категорию'}
+          options={subcategoryOptions}
+          loading={subcategoriesFetching}
           showSearch={{
-            searchValue: categoriesSearch,
-            onSearch: categoriesSearchChanged,
+            searchValue: subcategoriesSearch,
+            onSearch: subcategoriesSearchChanged,
             filterOption: false,
             autoClearSearchValue: true,
           }}
@@ -153,7 +187,10 @@ export const CatalogItemModal = () => {
                 natural={natural}
                 area={area}
                 name={form.watch('nameRu') || editingItem.name}
-                category={categoryOptions.find((category) => category.id === form.watch('categoryId'))?.name}
+                category={
+                  subcategoryOptions.find((option) => option.value === subcategoryId)?.label ??
+                  categoryOptions.find((category) => category.id === categoryId)?.name
+                }
               />
             )}
           />

@@ -3,7 +3,7 @@ import { z } from 'zod/v4';
 import { debounce, delay, or } from 'patronum';
 import { createQuery } from 'effector-refetch';
 
-import type { Category } from '@/entities/category';
+import { createCategoryPicker } from '@/entities/category';
 import type { CatalogItem } from '@/entities/catalog';
 import type { Country } from '@/entities/country';
 import { userModel } from '@/entities/user';
@@ -16,7 +16,8 @@ export const schema = z.object({
   nameRu: z.string().min(2, 'Минимум 2 символа'),
   nameUz: z.string().optional(),
   nameEn: z.string().optional(),
-  categoryId: z.string().optional(),
+  categoryId: z.string().min(1, 'Выберите категорию'),
+  subcategoryId: z.string().optional(),
   countryId: z.string().optional(),
   descriptionRu: z.string().optional(),
   descriptionUz: z.string().optional(),
@@ -35,6 +36,7 @@ export const DEFAULT_VALUES: FormValues = {
   nameUz: '',
   nameEn: '',
   categoryId: '',
+  subcategoryId: '',
   countryId: '',
   descriptionRu: '',
   descriptionUz: '',
@@ -76,7 +78,6 @@ export const createTriggered = createEvent();
 export const editTriggered = createEvent<CatalogItem>();
 export const reset = createEvent();
 export const validated = createEvent();
-export const categoriesSearchChanged = createEvent<string>();
 export const countriesSearchChanged = createEvent<string>();
 /** Ручное «Обновить» в модалке: подтянуть позицию, пока её видео обрабатывается. */
 export const refreshTriggered = createEvent();
@@ -84,16 +85,18 @@ export const refreshTriggered = createEvent();
 export const $editingItem = createStore<CatalogItem | null>(null);
 export const $mode = createStore<'create' | 'edit'>('create');
 
-export const $categories = createStore<Category[]>([]);
-export const $categoriesSearch = restore(categoriesSearchChanged, '');
+/** Выбранная категория товаров — от неё зависят варианты подкатегории. */
+export const $categoryId = form.$formValues.map((values) => values.categoryId || null);
 
-const fetchCategoriesQuery = createQuery({
-  effect: createEffect((search?: string) =>
-    api.category.findAll({ limit: 100, status: 'APPROVED', search: search || undefined }),
-  ),
-  cache: { staleAfter: 10_000 },
-  concurrency: 'TAKE_LATEST',
-});
+const categoryPicker = createCategoryPicker({ $categoryId });
+export const {
+  $categories,
+  $categoriesFetching,
+  $subcategories,
+  $subcategoriesSearch,
+  $subcategoriesFetching,
+  subcategoriesSearchChanged,
+} = categoryPicker;
 
 export const $countries = createStore<Country[]>([]);
 export const $countriesSearch = restore(countriesSearchChanged, '');
@@ -109,7 +112,8 @@ export const createFx = attach({
   effect: ({ values, role }) =>
     api.catalog.create({
       translations: toTranslations(values),
-      categoryId: values.categoryId || undefined,
+      categoryId: values.categoryId,
+      subcategoryId: values.subcategoryId || undefined,
       countryId: values.countryId || undefined,
       freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
     }),
@@ -121,9 +125,10 @@ export const updateFx = attach({
     if (!editing) throw new Error('No catalog item');
     return api.catalog.update(editing.id, {
       translations: toTranslations(values),
+      categoryId: values.categoryId,
       // Именно null, а не undefined: undefined в PATCH означает «не менять»,
       // и очистка селекта не доехала бы до бэкенда.
-      categoryId: values.categoryId || null,
+      subcategoryId: values.subcategoryId || null,
       countryId: values.countryId || null,
       status: role === 'SUPER_ADMIN' ? values.status : undefined,
       freeDelivery: role === 'SUPER_ADMIN' ? values.freeDelivery : undefined,
@@ -174,7 +179,6 @@ export const mutated = merge([createFx.done, updateFx.done, addMediaFx.done, rem
 const saved = merge([createFx.done, updateFx.done]);
 /** Только что созданная позиция — из неё страница каталога заводит продажную позицию. */
 export const created = createFx.doneData;
-export const $categoriesFetching = fetchCategoriesQuery.$pending;
 export const $countriesFetching = fetchCountriesQuery.$pending;
 
 $mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
@@ -182,7 +186,7 @@ $mode.on(createTriggered, () => 'create').on(editTriggered, () => 'edit');
 sample({
   clock: [createTriggered, editTriggered],
   fn: () => undefined,
-  target: [fetchCategoriesQuery.start, fetchCountriesQuery.start, disclosure.opened],
+  target: [categoryPicker.load, fetchCountriesQuery.start, disclosure.opened],
 });
 
 sample({
@@ -196,19 +200,6 @@ sample({
 export const $refreshing = refetchItemFx.pending;
 
 sample({ clock: refreshTriggered, target: refetchItemFx });
-
-sample({
-  clock: fetchCategoriesQuery.finished.done,
-  // Параметр status бэкенд применяет только для SUPER_ADMIN: продавцу он всё равно
-  // отдаёт его собственные категории в любом статусе — дофильтровываем на клиенте.
-  fn: (res) => res.result.data.items.filter((category) => category.status === 'APPROVED'),
-  target: $categories,
-});
-
-sample({
-  clock: debounce(categoriesSearchChanged, 300),
-  target: fetchCategoriesQuery.start,
-});
 
 sample({
   clock: fetchCountriesQuery.finished.done,
@@ -235,7 +226,8 @@ sample({
       nameRu: ru?.name ?? '',
       nameUz: uz && !uz.auto ? uz.name : '',
       nameEn: en && !en.auto ? en.name : '',
-      categoryId: item.categoryId ?? '',
+      categoryId: item.categoryId,
+      subcategoryId: item.subcategoryId ?? '',
       countryId: item.countryId ?? '',
       descriptionRu: ru?.description ?? '',
       descriptionUz: uz && !uz.auto ? (uz.description ?? '') : '',
@@ -270,8 +262,6 @@ sample({
     form.resetFx.prepend(() => DEFAULT_VALUES),
     $editingItem.reinit,
     $mode.reinit,
-    $categories.reinit,
-    $categoriesSearch.reinit,
     $countries.reinit,
     $countriesSearch.reinit,
   ],
