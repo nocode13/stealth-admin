@@ -1,0 +1,6 @@
+anthropic
+openpyxl
+pillow
+python-dotenv
+requests
+rembg[cpu]

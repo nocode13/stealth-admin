@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 .env
+
+# Ветка tools/catalog-import: партии, кэш и окружение скрипта подготовки
+public/catalog-import/
+tools/catalog-import/.venv/
+tools/catalog-import/cache/
+tools/catalog-import/__pycache__/

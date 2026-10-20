@@ -422,6 +422,17 @@ bps; первая ступень «от 0» задизейблена и неуд
 - Текст — `RichTextField` с `links` и `headings={false}`: под то, что Telegram умеет показать
   (бэкенд разворачивает списки в «• »/«1. », ссылки оставляет).
 
+## Импорт каталога (только ветка `tools/catalog-import`, в main не уходит)
+
+`pages/catalog-import` (`/catalog-import`, роль `SUPER_ADMIN`) — approve партии растений из
+Telegram-канала + прайса. Партию готовит `tools/catalog-import/prepare.py` (Python, Claude Sonnet, rembg) в
+`public/catalog-import/<batch>/manifest.json` (gitignored, Vite отдаёт как статику); порядок запуска —
+`tools/catalog-import/README.md`. Бэкенд не меняется: approve идёт существующими эндпоинтами
+(`lib/apply.ts`: каталог → позиция → галерея позиции → `ACTIVE`, повтор продолжает с упавшего шага).
+Матчинг на карточке — чистые функции `lib/match.ts`/`lib/draft.ts` поверх живых данных (`lib/system.ts`
+грузит все листинги/каталоги разом); правки руками — `$overrides` в модели. Прод из локальной админки —
+через прокси `/prod-api` в `vite.config.ts` (включается `IMPORT_PROXY_TARGET`).
+
 ## Auth (важно)
 
 Бэкенд использует **сессионную httpOnly cookie** (`connect.sid`), НЕ JWT. Поэтому:

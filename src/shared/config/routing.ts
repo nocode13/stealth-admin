@@ -40,6 +40,9 @@ export const routes = {
   promotions: createRoute(),
   pricePriorities: createRoute(),
 
+  // Только ветка tools/catalog-import: импорт каталога из Telegram + прайса.
+  catalogImport: createRoute(),
+
   notFound: createRoute(),
   forbidden: createRoute(),
 };
@@ -72,6 +75,7 @@ export const routesMap = [
   { route: routes.broadcasts, path: '/broadcasts' },
   { route: routes.promotions, path: '/promotions' },
   { route: routes.pricePriorities, path: '/price-priorities' },
+  { route: routes.catalogImport, path: '/catalog-import' },
 
   { route: routes.forbidden, path: '/forbidden' },
 ];

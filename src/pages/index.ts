@@ -19,6 +19,7 @@ import { Team } from './team';
 import { Broadcasts } from './broadcasts';
 import { Promotions } from './promotions';
 import { PricePriorities } from './price-priorities';
+import { CatalogImport } from './catalog-import';
 
 export const Pages = createRoutesView({
   routes: [
@@ -39,6 +40,7 @@ export const Pages = createRoutesView({
     Broadcasts,
     Promotions,
     PricePriorities,
+    CatalogImport,
     NotFound,
     Forbidden,
   ],

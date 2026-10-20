@@ -5,6 +5,7 @@ import type { RouteInstance } from 'atomic-router';
 import {
   HomeOutlined,
   AppstoreOutlined,
+  CloudUploadOutlined,
   BarChartOutlined,
   GlobalOutlined,
   MobileOutlined,
@@ -73,6 +74,13 @@ const MENU_ROUTES: { route: RouteInstance<object>; label: string; roles: Role[];
     icon: UnorderedListOutlined,
   },
   {
+    route: routes.catalogImport,
+    label: 'Импорт каталога',
+    roles: ['SUPER_ADMIN'],
+    key: 'catalogImport',
+    icon: CloudUploadOutlined,
+  },
+  {
     // Пускаем только SELLER: у SUPER_ADMIN команда живёт на карточке продавца,
     // потому что своей у него нет.
     route: routes.team,
@@ -132,6 +140,7 @@ export const $activeRoutes = combine({
   sellers: or(routes.sellers.root.$isOpened, routes.sellers.seller.$isOpened),
   catalog: or(routes.catalog.root.$isOpened, routes.catalog.item.$isOpened),
   listing: or(routes.listing.root.$isOpened, routes.listing.item.$isOpened),
+  catalogImport: routes.catalogImport.$isOpened,
   orders: or(routes.orders.root.$isOpened, routes.orders.order.$isOpened),
   team: routes.team.$isOpened,
   metrics: routes.metrics.$isOpened,
